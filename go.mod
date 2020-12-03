@@ -49,7 +49,7 @@ require (
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 	golang.org/x/net v0.0.0-20200930145003-4acb6c075d10 // indirect
 	google.golang.org/genproto v0.0.0-20201111145450-ac7456db90a6
-	google.golang.org/grpc v1.33.2
+	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 )
