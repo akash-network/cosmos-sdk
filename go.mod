@@ -11,13 +11,13 @@ require (
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/confio/ics23/go v0.6.3
 	github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d
-	github.com/cosmos/iavl v0.15.0-rc5
+	github.com/cosmos/iavl v0.15.3
 	github.com/cosmos/ledger-cosmos-go v0.11.1
 	github.com/dgraph-io/ristretto v0.0.3 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/enigmampc/btcutil v1.0.3-0.20200723161021-e2fb6adb2a25
 	github.com/gogo/gateway v1.1.0
-	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/protobuf v1.3.2
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.2 // indirect
@@ -40,16 +40,15 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect; indirects
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/btcd v0.1.1
 	github.com/tendermint/crypto v0.0.0-20191022145703-50d29ede1e15
 	github.com/tendermint/go-amino v0.16.0
-	github.com/tendermint/tendermint v0.34.0-rc6
-	github.com/tendermint/tm-db v0.6.3
-	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	golang.org/x/net v0.0.0-20200930145003-4acb6c075d10 // indirect
-	google.golang.org/genproto v0.0.0-20201111145450-ac7456db90a6
-	google.golang.org/grpc v1.33.2
+	github.com/tendermint/tendermint v0.34.11
+	github.com/tendermint/tm-db v0.6.4
+	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
+	google.golang.org/genproto v0.0.0-20201119123407-9b1e624d6bc4
+	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 )
