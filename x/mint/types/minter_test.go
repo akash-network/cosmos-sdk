@@ -3,6 +3,7 @@ package types
 import (
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -52,6 +53,22 @@ func TestNextInflation(t *testing.T) {
 		require.True(t, diffInflation.Equal(tc.expChange),
 			"Test Index: %v\nDiff:  %v\nExpected: %v\n", i, diffInflation, tc.expChange)
 	}
+}
+
+func TestGetInflationWithTime(t *testing.T) {
+	params := DefaultParams()
+	genesisTime, err := time.Parse(time.RFC3339, "2020-09-25T14:00:00Z")
+	require.NoError(t, err)
+
+	// Expecting some static value
+	t1 := genesisTime.Add(time.Hour * 7000)
+	inflation := GetInflationWithTime(params, genesisTime, t1, sdk.NewDecWithPrec(10, 2), 2.5)
+	require.Equal(t, "0.080139425624713223", inflation.String())
+
+	// expecting min inflation i.e., 0.07
+	t2 := genesisTime.Add(time.Hour * 16000)
+	inflation = GetInflationWithTime(params, genesisTime, t2, sdk.NewDecWithPrec(10, 2), 2.5)
+	require.Equal(t, "0.070000000000000000", inflation.String())
 }
 
 func TestBlockProvision(t *testing.T) {
