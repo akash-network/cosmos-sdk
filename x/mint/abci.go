@@ -11,12 +11,22 @@ import (
 
 const (
 	timeToHalveInflationRate float64 = 2
-	genesisTimeStr                   = "2020-09-25T14:00:00Z"
 )
 
 var (
 	initialInflation = sdk.NewDecWithPrec(54, 2)
+	genesisTime      time.Time
 )
+
+func init() {
+	var err error
+	genesisTimeStr := "2020-09-25T14:00:00Z"
+
+	genesisTime, err = time.Parse(time.RFC3339, genesisTimeStr)
+	if err != nil {
+		panic(err)
+	}
+}
 
 // BeginBlocker mints new tokens for the previous block.
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
@@ -30,13 +40,8 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	totalStakingSupply := k.StakingTokenSupply(ctx)
 	bondedRatio := k.BondedRatio(ctx)
 
-	genesisTime, err := time.Parse(time.RFC3339, genesisTimeStr)
-	if err != nil {
-		panic(err)
-	}
-
-	minter.Inflation = types.GetInflationWithTime(params, genesisTime, ctx.BlockTime(),
-		initialInflation, timeToHalveInflationRate)
+	minter.Inflation = minter.GetInflationWithTime(params, genesisTime, ctx.BlockTime(),
+		bondedRatio, initialInflation, timeToHalveInflationRate)
 	minter.AnnualProvisions = minter.NextAnnualProvisions(params, totalStakingSupply)
 	k.SetMinter(ctx, minter)
 
@@ -44,7 +49,7 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	mintedCoin := minter.BlockProvision(params)
 	mintedCoins := sdk.NewCoins(mintedCoin)
 
-	err = k.MintCoins(ctx, mintedCoins)
+	err := k.MintCoins(ctx, mintedCoins)
 	if err != nil {
 		panic(err)
 	}

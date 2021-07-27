@@ -43,28 +43,22 @@ func ValidateMinter(minter Minter) error {
 }
 
 // GetInflationWithTime returns the new inflation rate with given time
-func GetInflationWithTime(params Params, genesisTime, currentTime time.Time, initialInflation sdk.Dec,
-	tHalf float64) sdk.Dec {
+func (m Minter) GetInflationWithTime(params Params, genesisTime, currentTime time.Time, bondedRatio,
+	initialInflation sdk.Dec, tHalf float64) sdk.Dec {
 	yearsPassed := (currentTime.Sub(genesisTime)).Seconds() / (60 * 60 * 8766)
 
-	// inflation = initialInflation * 2^ -(timePassedfromGenesis/TimetoHalveInflationRate)
+	// curInflation = initialInflation * 2^ -(timePassedfromGenesis/TimetoHalveInflationRate)
 	twoPowerDec, err := sdk.NewDecFromStr(fmt.Sprintf("%.18f", math.Pow(2, -(yearsPassed/tHalf))))
 	if err != nil {
 		panic(err)
 	}
-	inflation := initialInflation.Mul(twoPowerDec)
-	if inflation.GT(params.InflationMax) {
-		inflation = params.InflationMax
-	}
-	if inflation.LT(params.InflationMin) {
-		inflation = params.InflationMin
-	}
+	curInflation := initialInflation.Mul(twoPowerDec)
 
-	return inflation
+	return m.NextInflationRate(params, bondedRatio, curInflation)
 }
 
 // NextInflationRate returns the new inflation rate for the next hour.
-func (m Minter) NextInflationRate(params Params, bondedRatio sdk.Dec) sdk.Dec {
+func (m Minter) NextInflationRate(params Params, bondedRatio sdk.Dec, curInflation sdk.Dec) sdk.Dec {
 	// The target annual inflation rate is recalculated for each previsions cycle. The
 	// inflation is also subject to a rate change (positive or negative) depending on
 	// the distance from the desired ratio (67%). The maximum rate change possible is
@@ -78,7 +72,7 @@ func (m Minter) NextInflationRate(params Params, bondedRatio sdk.Dec) sdk.Dec {
 	inflationRateChange := inflationRateChangePerYear.Quo(sdk.NewDec(int64(params.BlocksPerYear)))
 
 	// adjust the new annual inflation for this next cycle
-	inflation := m.Inflation.Add(inflationRateChange) // note inflationRateChange may be negative
+	inflation := curInflation.Add(inflationRateChange) // note inflationRateChange may be negative
 	if inflation.GT(params.InflationMax) {
 		inflation = params.InflationMax
 	}
