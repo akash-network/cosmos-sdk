@@ -2,10 +2,13 @@ package simapp
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -87,11 +90,16 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
 
-const appName = "SimApp"
+const (
+	appName = "SimApp"
+	tHalf   = 2.0
+)
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
+
+	genesisTime time.Time
 
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
@@ -129,8 +137,9 @@ var (
 )
 
 var (
-	_ App                     = (*SimApp)(nil)
-	_ servertypes.Application = (*SimApp)(nil)
+	_                App                     = (*SimApp)(nil)
+	_                servertypes.Application = (*SimApp)(nil)
+	initialInflation                         = sdk.NewDecWithPrec(54, 2)
 )
 
 // SimApp extends an ABCI application, but with most of its parameters exported.
@@ -182,6 +191,12 @@ func init() {
 	}
 
 	DefaultNodeHome = filepath.Join(userHomeDir, ".simapp")
+
+	genesisTimeStr := "2020-09-25T14:00:00Z"
+	genesisTime, err = time.Parse(time.RFC3339, genesisTimeStr)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // NewSimApp returns a reference to an initialized SimApp.
@@ -238,10 +253,13 @@ func NewSimApp(
 	stakingKeeper := stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName),
 	)
-	app.MintKeeper = mintkeeper.NewKeeper(
+
+	mintKeeper := mintkeeper.NewKeeper(
 		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), &stakingKeeper,
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 	)
+	app.MintKeeper = *mintKeeper.SetInflationCurve(GetInflationWithTime)
+
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec, keys[distrtypes.StoreKey], app.GetSubspace(distrtypes.ModuleName), app.AccountKeeper, app.BankKeeper,
 		&stakingKeeper, authtypes.FeeCollectorName, app.ModuleAccountAddrs(),
@@ -412,6 +430,20 @@ func NewSimApp(
 	}
 
 	return app
+}
+
+// GetInflationWithTime returns the new inflation rate with given time
+func GetInflationWithTime(ctx sdk.Context, m minttypes.Minter, params minttypes.Params, bondedRatio sdk.Dec) sdk.Dec {
+	yearsPassed := (ctx.BlockTime().Sub(genesisTime)).Seconds() / (60 * 60 * 8766)
+
+	// inflation = initialInflation * 2^ -(timePassedfromGenesis/TimetoHalveInflationRate)
+	twoPowerDec, err := sdk.NewDecFromStr(fmt.Sprintf("%.18f", math.Pow(2, -(yearsPassed/tHalf))))
+	if err != nil {
+		panic(err)
+	}
+	m.Inflation = initialInflation.Mul(twoPowerDec)
+
+	return minttypes.NextInflationRate(ctx, m, params, bondedRatio)
 }
 
 // Name returns the name of the App
