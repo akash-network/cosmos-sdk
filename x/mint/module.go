@@ -88,14 +88,19 @@ type AppModule struct {
 
 	keeper     keeper.Keeper
 	authKeeper types.AccountKeeper
+
+	// inflationCalculator is used to calculate the inflation rate during BeginBlock.
+	// If inflationCalculator is nil, the default inflation calculation logic is used.
+	inflationCalculator types.InflationCalculationFn
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper) AppModule {
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, ak types.AccountKeeper, ic types.InflationCalculationFn) AppModule {
 	return AppModule{
-		AppModuleBasic: AppModuleBasic{cdc: cdc},
-		keeper:         keeper,
-		authKeeper:     ak,
+		AppModuleBasic:      AppModuleBasic{cdc: cdc},
+		keeper:              keeper,
+		authKeeper:          ak,
+		inflationCalculator: ic,
 	}
 }
 
@@ -148,7 +153,7 @@ func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock returns the begin blocker for the mint module.
 func (am AppModule) BeginBlock(ctx sdk.Context, _ abci.RequestBeginBlock) {
-	BeginBlocker(ctx, am.keeper)
+	BeginBlocker(ctx, am.keeper, am.inflationCalculator)
 }
 
 // EndBlock returns the end blocker for the mint module. It returns no validator
