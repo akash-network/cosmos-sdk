@@ -8,7 +8,7 @@ require (
 	github.com/bgentry/speakeasy v0.1.0
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
-	github.com/coinbase/rosetta-sdk-go v0.6.10
+	github.com/coinbase/rosetta-sdk-go v0.7.0
 	github.com/confio/ics23/go v0.6.6
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/cosmos/iavl v0.16.0
