@@ -16,7 +16,7 @@ possible is defined to be 13% per year, however the annual inflation is capped
 as between 7% and 20%.
 
 ```
-NextInflationRate(params Params, bondedRatio sdk.Dec) (inflation sdk.Dec) {
+NextInflationRate(ctx sdk.Context, m minter, params Params, bondedRatio sdk.Dec) (inflation sdk.Dec) {
 	inflationRateChangePerYear = (1 - bondedRatio/params.GoalBonded) * params.InflationRateChange
 	inflationRateChange = inflationRateChangePerYear/blocksPerYr
 

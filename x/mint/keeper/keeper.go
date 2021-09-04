@@ -17,6 +17,7 @@ type Keeper struct {
 	stakingKeeper    types.StakingKeeper
 	bankKeeper       types.BankKeeper
 	feeCollectorName string
+	inflationCurve   func(sdk.Context, types.Minter, types.Params, sdk.Dec) sdk.Dec
 }
 
 // NewKeeper creates a new mint Keeper instance
@@ -42,6 +43,7 @@ func NewKeeper(
 		stakingKeeper:    sk,
 		bankKeeper:       bk,
 		feeCollectorName: feeCollectorName,
+		inflationCurve:   types.NextInflationRate,
 	}
 }
 
@@ -107,4 +109,18 @@ func (k Keeper) MintCoins(ctx sdk.Context, newCoins sdk.Coins) error {
 // AddCollectedFees to be used in BeginBlocker.
 func (k Keeper) AddCollectedFees(ctx sdk.Context, fees sdk.Coins) error {
 	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, k.feeCollectorName, fees)
+}
+
+func (k Keeper) GetInflationCurve() func(sdk.Context, types.Minter, types.Params, sdk.Dec) sdk.Dec {
+	return k.inflationCurve
+}
+
+// SetInflationCurve sets custom inflation calculation logic
+func (k *Keeper) SetInflationCurve(f func(sdk.Context, types.Minter, types.Params, sdk.Dec) sdk.Dec) *Keeper {
+	if f == nil {
+		panic("cannot set inflation curve function to nil")
+	}
+
+	k.inflationCurve = f
+	return k
 }
