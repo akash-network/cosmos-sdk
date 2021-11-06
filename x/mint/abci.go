@@ -9,6 +9,25 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/mint/types"
 )
 
+const (
+	timeToHalveInflationRate float64 = 2
+)
+
+var (
+	initialInflation = sdk.NewDecWithPrec(54, 2)
+	genesisTime      time.Time
+)
+
+func init() {
+	var err error
+	genesisTimeStr := "2020-09-25T14:00:00Z"
+
+	genesisTime, err = time.Parse(time.RFC3339, genesisTimeStr)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // BeginBlocker mints new tokens for the previous block.
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
@@ -20,7 +39,9 @@ func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
 	// recalculate inflation rate
 	totalStakingSupply := k.StakingTokenSupply(ctx)
 	bondedRatio := k.BondedRatio(ctx)
-	minter.Inflation = minter.NextInflationRate(params, bondedRatio)
+
+	minter.Inflation = minter.GetInflationWithTime(params, genesisTime, ctx.BlockTime(),
+		bondedRatio, initialInflation, timeToHalveInflationRate)
 	minter.AnnualProvisions = minter.NextAnnualProvisions(params, totalStakingSupply)
 	k.SetMinter(ctx, minter)
 

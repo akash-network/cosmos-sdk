@@ -3,6 +3,7 @@ package types
 import (
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -46,12 +47,38 @@ func TestNextInflation(t *testing.T) {
 	for i, tc := range tests {
 		minter.Inflation = tc.setInflation
 
-		inflation := minter.NextInflationRate(params, tc.bondedRatio)
+		inflation := minter.NextInflationRate(params, tc.bondedRatio, tc.setInflation)
 		diffInflation := inflation.Sub(tc.setInflation)
 
 		require.True(t, diffInflation.Equal(tc.expChange),
 			"Test Index: %v\nDiff:  %v\nExpected: %v\n", i, diffInflation, tc.expChange)
 	}
+}
+
+func TestGetInflationWithTime(t *testing.T) {
+	minter := DefaultInitialMinter()
+	params := DefaultParams()
+	blocksPerYr := sdk.NewDec(int64(params.BlocksPerYear))
+	genesisTime, err := time.Parse(time.RFC3339, "2020-09-25T14:00:00Z")
+	require.NoError(t, err)
+
+	// Expecting some static value with 67% bonded percentage
+	t1 := genesisTime.Add(time.Hour * 7000)
+	inflation := minter.GetInflationWithTime(params, genesisTime, t1, sdk.NewDecWithPrec(67, 2), sdk.NewDecWithPrec(10, 2), 2.5)
+	require.Equal(t, "0.080139425624713223", inflation.String())
+
+	// Expecting inflation change with 50% bonded percentage
+	t2 := genesisTime.Add(time.Hour * 7000)
+	newInflation := minter.GetInflationWithTime(params, genesisTime, t2, sdk.NewDecWithPrec(5, 1), sdk.NewDecWithPrec(10, 2), 2.5)
+	// (1 - (0.5/0.67))*(0.13/8667)
+	expInflationChange := sdk.OneDec().Sub(sdk.NewDecWithPrec(5, 1).Quo(params.GoalBonded)).Mul(params.InflationRateChange).Quo(blocksPerYr)
+	inflationChanged := newInflation.Sub(inflation)
+	require.Equal(t, expInflationChange.String(), inflationChanged.String())
+
+	// expecting min inflation i.e., 0.07
+	t3 := genesisTime.Add(time.Hour * 16000)
+	inflation = minter.GetInflationWithTime(params, genesisTime, t3, sdk.NewDecWithPrec(67, 2), sdk.NewDecWithPrec(10, 2), 2.5)
+	require.Equal(t, "0.070000000000000000", inflation.String())
 }
 
 func TestBlockProvision(t *testing.T) {
@@ -113,7 +140,7 @@ func BenchmarkNextInflation(b *testing.B) {
 
 	// run the NextInflationRate function b.N times
 	for n := 0; n < b.N; n++ {
-		minter.NextInflationRate(params, bondedRatio)
+		minter.NextInflationRate(params, bondedRatio, minter.Inflation)
 	}
 
 }
