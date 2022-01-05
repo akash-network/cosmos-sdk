@@ -33,7 +33,7 @@ jobs:
       - uses: actions/setup-go@v2.1.4
         with:
           go-version: 1.17
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6.0.1
         id: git_diff
         with:
           PATTERNS: |
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/setup-go@v2.1.4
         with:
           go-version: 1.17
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6.0.1
         id: git_diff
         with:
           PATTERNS: |
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/setup-go@v2.1.4
         with:
           go-version: 1.17
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6.0.1
         with:
           PATTERNS: |
             **/**.go
@@ -131,7 +131,7 @@ jobs:
     needs: tests
     steps:
       - uses: actions/checkout@v2
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6.0.1
         with:
           PATTERNS: |
             **/**.go
@@ -189,7 +189,7 @@ jobs:
       - uses: actions/setup-go@v2.1.4
         with:
           go-version: 1.17
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6.0.1
         with:
           PATTERNS: |
             **/**.go
@@ -213,7 +213,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v2
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6.0.1
         id: git_diff
         with:
           PATTERNS: |
@@ -233,7 +233,7 @@ jobs:
       - uses: actions/setup-go@v2.1.4
         with:
           go-version: 1.17
-      - uses: technote-space/get-diff-action@v5
+      - uses: technote-space/get-diff-action@v6.0.1
         id: git_diff
         with:
           PATTERNS: |
