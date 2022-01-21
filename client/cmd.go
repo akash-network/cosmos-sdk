@@ -1,13 +1,16 @@
 package client
 
 import (
+	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/tendermint/tendermint/libs/cli"
+	"google.golang.org/grpc"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -21,7 +24,7 @@ const ClientContextKey = sdk.ContextKey("client.context")
 // SetCmdClientContextHandler is to be used in a command pre-hook execution to
 // read flags that populate a Context and sets that to the command's Context.
 func SetCmdClientContextHandler(clientCtx Context, cmd *cobra.Command) (err error) {
-	clientCtx, err = ReadPersistentCommandFlags(clientCtx, cmd.Flags())
+	clientCtx, err = ReadPersistentCommandFlags(cmd.Context(), clientCtx, cmd.Flags())
 	if err != nil {
 		return err
 	}
@@ -87,7 +90,7 @@ func ValidateCmd(cmd *cobra.Command, args []string) error {
 // - client.Context field not pre-populated & flag set: uses set flag value
 // - client.Context field pre-populated & flag not set: uses pre-populated value
 // - client.Context field pre-populated & flag set: uses set flag value
-func ReadPersistentCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Context, error) {
+func ReadPersistentCommandFlags(ctx context.Context, clientCtx Context, flagSet *pflag.FlagSet) (Context, error) {
 	if clientCtx.OutputFormat == "" || flagSet.Changed(cli.OutputFlag) {
 		output, _ := flagSet.GetString(cli.OutputFlag)
 		clientCtx = clientCtx.WithOutputFormat(output)
@@ -133,8 +136,19 @@ func ReadPersistentCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Cont
 		}
 	}
 
-	if clientCtx.Client == nil || flagSet.Changed(flags.FlagNode) {
+	if clientCtx.Client == nil || flagSet.Changed(flags.FlagNode) || flagSet.Changed(flags.FlagGRPC) {
 		rpcURI, _ := flagSet.GetString(flags.FlagNode)
+		grpcURI, _ := flagSet.GetString(flags.FlagGRPC)
+
+		if grpcURI != "" {
+			gcl, err := grpc.DialContext(ctx, grpcURI, grpc.WithInsecure())
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "grpc connect error. falling back to ABCI. %v", err.Error())
+			} else {
+				clientCtx = clientCtx.WithGRPC(gcl)
+			}
+		}
+
 		if rpcURI != "" {
 			clientCtx = clientCtx.WithNodeURI(rpcURI)
 
@@ -160,7 +174,8 @@ func ReadPersistentCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Cont
 // - client.Context field not pre-populated & flag set: uses set flag value
 // - client.Context field pre-populated & flag not set: uses pre-populated value
 // - client.Context field pre-populated & flag set: uses set flag value
-func readQueryCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Context, error) {
+func readQueryCommandFlags(clientCtx Context, cmd *cobra.Command) (Context, error) {
+	flagSet := cmd.Flags()
 	if clientCtx.Height == 0 || flagSet.Changed(flags.FlagHeight) {
 		height, _ := flagSet.GetInt64(flags.FlagHeight)
 		clientCtx = clientCtx.WithHeight(height)
@@ -171,7 +186,7 @@ func readQueryCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Context, 
 		clientCtx = clientCtx.WithUseLedger(useLedger)
 	}
 
-	return ReadPersistentCommandFlags(clientCtx, flagSet)
+	return ReadPersistentCommandFlags(cmd.Context(), clientCtx, cmd.Flags())
 }
 
 // readTxCommandFlags returns an updated Context with fields set based on flags
@@ -184,8 +199,8 @@ func readQueryCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Context, 
 // - client.Context field not pre-populated & flag set: uses set flag value
 // - client.Context field pre-populated & flag not set: uses pre-populated value
 // - client.Context field pre-populated & flag set: uses set flag value
-func readTxCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Context, error) {
-	clientCtx, err := ReadPersistentCommandFlags(clientCtx, flagSet)
+func readTxCommandFlags(ctx context.Context, clientCtx Context, flagSet *pflag.FlagSet) (Context, error) {
+	clientCtx, err := ReadPersistentCommandFlags(ctx, clientCtx, flagSet)
 	if err != nil {
 		return clientCtx, err
 	}
@@ -263,7 +278,7 @@ func readTxCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Context, err
 // - client.Context field pre-populated & flag set: uses set flag value
 func GetClientQueryContext(cmd *cobra.Command) (Context, error) {
 	ctx := GetClientContextFromCmd(cmd)
-	return readQueryCommandFlags(ctx, cmd.Flags())
+	return readQueryCommandFlags(ctx, cmd)
 }
 
 // GetClientTxContext returns a Context from a command with fields set based on flags
@@ -275,7 +290,7 @@ func GetClientQueryContext(cmd *cobra.Command) (Context, error) {
 // - client.Context field pre-populated & flag set: uses set flag value
 func GetClientTxContext(cmd *cobra.Command) (Context, error) {
 	ctx := GetClientContextFromCmd(cmd)
-	return readTxCommandFlags(ctx, cmd.Flags())
+	return readTxCommandFlags(cmd.Context(), ctx, cmd.Flags())
 }
 
 // GetClientContextFromCmd returns a Context from a command or an empty Context
