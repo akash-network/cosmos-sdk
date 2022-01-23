@@ -469,15 +469,19 @@ func (n *Network) Cleanup() {
 			_ = v.tmNode.Stop()
 		}
 
-		if v.api != nil {
-			_ = v.api.Close()
-		}
-
 		if v.grpc != nil {
+			if cl, valid := v.ClientCtx.ClientConn.(*grpc.ClientConn); valid {
+				_ = cl.Close()
+			}
+
 			v.grpc.Stop()
 			if v.grpcWeb != nil {
 				_ = v.grpcWeb.Close()
 			}
+		}
+
+		if v.api != nil {
+			_ = v.api.Close()
 		}
 	}
 
