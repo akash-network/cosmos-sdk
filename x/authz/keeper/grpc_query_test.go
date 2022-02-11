@@ -162,3 +162,62 @@ func (suite *TestSuite) TestGRPCQueryAuthorizations() {
 		})
 	}
 }
+
+func (suite *TestSuite) TestGRPCQueryGrantsByGranter() {
+	app, ctx, queryClient, addrs := suite.app, suite.ctx, suite.queryClient, suite.addrs
+	var (
+		req              *authz.QueryGrantsByGranterRequest
+		expAuthorization authz.Authorization
+	)
+	testCases := []struct {
+		msg      string
+		malleate func()
+		expPass  bool
+		postTest func(res *authz.QueryGrantsByGranterResponse)
+	}{
+		{
+			"fail invalid granter addr",
+			func() {
+				req = &authz.QueryGrantsByGranterRequest{}
+			},
+			false,
+			func(res *authz.QueryGrantsByGranterResponse) {},
+		},
+		{
+			"Success",
+			func() {
+				now := ctx.BlockHeader().Time
+				newCoins := sdk.NewCoins(sdk.NewInt64Coin("steak", 100))
+				expAuthorization = &banktypes.SendAuthorization{SpendLimit: newCoins}
+				err := app.AuthzKeeper.SaveGrant(ctx, addrs[0], addrs[1], expAuthorization, now.Add(time.Hour))
+				suite.Require().NoError(err)
+				req = &authz.QueryGrantsByGranterRequest{
+					Granter: addrs[1].String(),
+				}
+			},
+			true,
+			func(res *authz.QueryGrantsByGranterResponse) {
+				var auth authz.Authorization
+				suite.Require().Equal(1, len(res.GranteeGrantsPair))
+				suite.Require().Equal(res.GranteeGrantsPair[0].Grantee, addrs[0].String())
+				suite.Require().Equal(1, len(res.GranteeGrantsPair[0].Grants))
+				err := suite.app.InterfaceRegistry().UnpackAny(res.GranteeGrantsPair[0].Grants[0].Authorization, &auth)
+				suite.Require().NoError(err)
+				suite.Require().NotNil(auth)
+				suite.Require().Equal(auth.String(), expAuthorization.String())
+			},
+		},
+	}
+	for _, testCase := range testCases {
+		suite.Run(fmt.Sprintf("Case %s", testCase.msg), func() {
+			testCase.malleate()
+			result, err := queryClient.GrantsByGranter(gocontext.Background(), req)
+			if testCase.expPass {
+				suite.Require().NoError(err)
+			} else {
+				suite.Require().Error(err)
+			}
+			testCase.postTest(result)
+		})
+	}
+}

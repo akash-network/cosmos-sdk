@@ -90,6 +90,65 @@ func (k Keeper) Grants(c context.Context, req *authz.QueryGrantsRequest) (*authz
 	}, nil
 }
 
+func (k Keeper) GrantsByGranter(c context.Context, req *authz.QueryGrantsByGranterRequest) (*authz.QueryGrantsByGranterResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	granter, err := sdk.AccAddressFromBech32(req.Granter)
+	if err != nil {
+		return nil, err
+	}
+	ctx := sdk.UnwrapSDKContext(c)
+
+	store := ctx.KVStore(k.storeKey)
+	key := grantStoreKey(sdk.AccAddress{}, granter, "")
+	authStore := prefix.NewStore(store, key)
+
+	granteeToGrantsMap := make(map[string][]*authz.Grant)
+	pageRes, err := query.FilteredPaginate(authStore, req.Pagination, func(key []byte, value []byte, accumulate bool) (bool, error) {
+		auth, err := unmarshalAuthorization(k.cdc, value)
+		if err != nil {
+			return false, err
+		}
+		auth1 := auth.GetAuthorization()
+		if accumulate {
+			msg, ok := auth1.(proto.Message)
+			if !ok {
+				return false, status.Errorf(codes.Internal, "can't protomarshal %T", msg)
+			}
+
+			authorizationAny, err := codectypes.NewAnyWithValue(msg)
+			if err != nil {
+				return false, status.Errorf(codes.Internal, err.Error())
+			}
+			grantee := granteeFromGranterPrefixedGrantStoreKey(key)
+			granteeStr := grantee.String()
+			granteeToGrantsMap[granteeStr] = append(granteeToGrantsMap[granteeStr], &authz.Grant{
+				Authorization: authorizationAny,
+				Expiration:    auth.Expiration,
+			})
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var granteeGrantsPair []*authz.GranteeGrantsPair
+	for granteeStr, grants := range granteeToGrantsMap {
+		granteeGrantsPair = append(granteeGrantsPair, &authz.GranteeGrantsPair{
+			Grantee: granteeStr,
+			Grants:  grants,
+		})
+	}
+
+	return &authz.QueryGrantsByGranterResponse{
+		GranteeGrantsPair: granteeGrantsPair,
+		Pagination:        pageRes,
+	}, nil
+}
+
 // unmarshal an authorization from a store value
 func unmarshalAuthorization(cdc codec.BinaryCodec, value []byte) (v authz.Grant, err error) {
 	err = cdc.Unmarshal(value, &v)
