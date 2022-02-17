@@ -47,7 +47,7 @@ func addressesFromGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAdd
 }
 
 func granteeFromGranterPrefixedGrantStoreKey(key []byte) (granteeAddr sdk.AccAddress) {
-	granteeAddrLen := key[0] // remove prefix key
+	granteeAddrLen := key[0] // first byte is the length of the address
 	granteeAddr = sdk.AccAddress(key[1 : 1+granteeAddrLen])
 
 	return granteeAddr

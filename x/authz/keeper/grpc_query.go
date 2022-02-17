@@ -66,7 +66,7 @@ func (k Keeper) Grants(c context.Context, req *authz.QueryGrantsRequest) (*authz
 		if accumulate {
 			msg, ok := auth1.(proto.Message)
 			if !ok {
-				return false, status.Errorf(codes.Internal, "can't protomarshal %T", msg)
+				return false, status.Errorf(codes.Internal, "can't protomarshal %T", auth1)
 			}
 
 			authorizationAny, err := codectypes.NewAnyWithValue(msg)
@@ -115,7 +115,7 @@ func (k Keeper) GrantsByGranter(c context.Context, req *authz.QueryGrantsByGrant
 		if accumulate {
 			msg, ok := auth1.(proto.Message)
 			if !ok {
-				return false, status.Errorf(codes.Internal, "can't protomarshal %T", msg)
+				return false, status.Errorf(codes.Internal, "can't protomarshal %T", auth1)
 			}
 
 			authorizationAny, err := codectypes.NewAnyWithValue(msg)
