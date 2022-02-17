@@ -39,6 +39,9 @@
     - [GrantAuthorization](#cosmos.authz.v1beta1.GrantAuthorization)
   
 - [cosmos/authz/v1beta1/query.proto](#cosmos/authz/v1beta1/query.proto)
+    - [GranteeGrantsPair](#cosmos.authz.v1beta1.GranteeGrantsPair)
+    - [QueryGrantsByGranterRequest](#cosmos.authz.v1beta1.QueryGrantsByGranterRequest)
+    - [QueryGrantsByGranterResponse](#cosmos.authz.v1beta1.QueryGrantsByGranterResponse)
     - [QueryGrantsRequest](#cosmos.authz.v1beta1.QueryGrantsRequest)
     - [QueryGrantsResponse](#cosmos.authz.v1beta1.QueryGrantsResponse)
   
@@ -1033,6 +1036,55 @@ GrantAuthorization defines the GenesisState/GrantAuthorization type.
 Since: cosmos-sdk 0.43
 
 
+<a name="cosmos.authz.v1beta1.GranteeGrantsPair"></a>
+
+### GranteeGrantsPair
+GranteeGrantsPair represents a pair of grantee and the grants granted to that grantee by the
+granter.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `grantee` | [string](#string) |  |  |
+| `grants` | [Grant](#cosmos.authz.v1beta1.Grant) | repeated | authorizations is a list of grants granted for grantee by granter. |
+
+
+
+
+
+
+<a name="cosmos.authz.v1beta1.QueryGrantsByGranterRequest"></a>
+
+### QueryGrantsByGranterRequest
+QueryGrantsByGranterRequest is the request type for the Query/GrantsByGranter RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `granter` | [string](#string) |  |  |
+| `pagination` | [cosmos.base.query.v1beta1.PageRequest](#cosmos.base.query.v1beta1.PageRequest) |  | pagination defines a pagination for the request. |
+
+
+
+
+
+
+<a name="cosmos.authz.v1beta1.QueryGrantsByGranterResponse"></a>
+
+### QueryGrantsByGranterResponse
+QueryGrantsByGranterResponse is the response type for the Query/GrantsByGranter RPC method.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| `grantee_grants_pair` | [GranteeGrantsPair](#cosmos.authz.v1beta1.GranteeGrantsPair) | repeated | a list of grantee-grants pair for the granter |
+| `pagination` | [cosmos.base.query.v1beta1.PageResponse](#cosmos.base.query.v1beta1.PageResponse) |  | pagination defines an pagination for the response. |
+
+
+
+
+
+
 <a name="cosmos.authz.v1beta1.QueryGrantsRequest"></a>
 
 ### QueryGrantsRequest
@@ -1081,6 +1133,7 @@ Query defines the gRPC querier service.
 | Method Name | Request Type | Response Type | Description | HTTP Verb | Endpoint |
 | ----------- | ------------ | ------------- | ------------| ------- | -------- |
 | `Grants` | [QueryGrantsRequest](#cosmos.authz.v1beta1.QueryGrantsRequest) | [QueryGrantsResponse](#cosmos.authz.v1beta1.QueryGrantsResponse) | Returns list of `Authorization`, granted to the grantee by the granter. | GET|/cosmos/authz/v1beta1/grants|
+| `GrantsByGranter` | [QueryGrantsByGranterRequest](#cosmos.authz.v1beta1.QueryGrantsByGranterRequest) | [QueryGrantsByGranterResponse](#cosmos.authz.v1beta1.QueryGrantsByGranterResponse) | Returns a list of `Grantee-Authorizations` pairs found for the granter | GET|/cosmos/authz/v1beta1/grants_by_granter|
 
  <!-- end services -->
 
@@ -1268,6 +1321,9 @@ tags are stringified and the log is JSON decoded.
 | `gas_used` | [int64](#int64) |  | Amount of gas consumed by transaction. |
 | `tx` | [google.protobuf.Any](#google.protobuf.Any) |  | The request transaction bytes. |
 | `timestamp` | [string](#string) |  | Time of the previous block. For heights > 1, it's the weighted median of the timestamps of the valid votes in the block.LastCommit. For height == 1, it's genesis time. |
+| `events` | [tendermint.abci.Event](#tendermint.abci.Event) | repeated | Events defines all the events emitted by processing a transaction. Note, these events include those emitted by processing all the messages and those emitted from the ante handler. Whereas Logs contains the events, with additional metadata, emitted only by processing the messages.
+
+Since: cosmos-sdk 0.42.11, 0.44.5, 0.45 |
 
 
 
