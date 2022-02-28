@@ -9,6 +9,7 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"sync"
 
 	iavltree "github.com/cosmos/iavl"
 	protoio "github.com/gogo/protobuf/io"
@@ -48,6 +49,7 @@ type Store struct {
 	db             dbm.DB
 	lastCommitInfo *types.CommitInfo
 	pruningOpts    types.PruningOptions
+	iavlCacheSize  int
 	storesParams   map[types.StoreKey]storeParams
 	stores         map[types.StoreKey]types.CommitKVStore
 	keysByName     map[string]types.StoreKey
@@ -55,8 +57,9 @@ type Store struct {
 	pruneHeights   []int64
 	initialVersion int64
 
-	traceWriter  io.Writer
-	traceContext types.TraceContext
+	traceWriter       io.Writer
+	traceContext      types.TraceContext
+	traceContextMutex sync.Mutex
 
 	interBlockCache types.MultiStorePersistentCache
 
@@ -74,13 +77,14 @@ var (
 // LoadVersion must be called.
 func NewStore(db dbm.DB) *Store {
 	return &Store{
-		db:           db,
-		pruningOpts:  types.PruneNothing,
-		storesParams: make(map[types.StoreKey]storeParams),
-		stores:       make(map[types.StoreKey]types.CommitKVStore),
-		keysByName:   make(map[string]types.StoreKey),
-		pruneHeights: make([]int64, 0),
-		listeners:    make(map[types.StoreKey][]types.WriteListener),
+		db:            db,
+		pruningOpts:   types.PruneNothing,
+		iavlCacheSize: iavl.DefaultIAVLCacheSize,
+		storesParams:  make(map[types.StoreKey]storeParams),
+		stores:        make(map[types.StoreKey]types.CommitKVStore),
+		keysByName:    make(map[string]types.StoreKey),
+		pruneHeights:  make([]int64, 0),
+		listeners:     make(map[types.StoreKey][]types.WriteListener),
 	}
 }
 
@@ -94,6 +98,10 @@ func (rs *Store) GetPruning() types.PruningOptions {
 // LoadLatestVersion performs a no-op as the stores aren't mounted yet.
 func (rs *Store) SetPruning(pruningOpts types.PruningOptions) {
 	rs.pruningOpts = pruningOpts
+}
+
+func (rs *Store) SetIAVLCacheSize(cacheSize int) {
+	rs.iavlCacheSize = cacheSize
 }
 
 // SetLazyLoading sets if the iavl store should be loaded lazily or not
@@ -315,6 +323,8 @@ func (rs *Store) SetTracer(w io.Writer) types.MultiStore {
 // be overwritten. It is implied that the caller should update the context when
 // necessary between tracing operations. It returns a modified MultiStore.
 func (rs *Store) SetTracingContext(tc types.TraceContext) types.MultiStore {
+	rs.traceContextMutex.Lock()
+	defer rs.traceContextMutex.Unlock()
 	if rs.traceContext != nil {
 		for k, v := range tc {
 			rs.traceContext[k] = v
@@ -324,6 +334,22 @@ func (rs *Store) SetTracingContext(tc types.TraceContext) types.MultiStore {
 	}
 
 	return rs
+}
+
+func (rs *Store) getTracingContext() types.TraceContext {
+	rs.traceContextMutex.Lock()
+	defer rs.traceContextMutex.Unlock()
+
+	if rs.traceContext == nil {
+		return nil
+	}
+
+	ctx := types.TraceContext{}
+	for k, v := range rs.traceContext {
+		ctx[k] = v
+	}
+
+	return ctx
 }
 
 // TracingEnabled returns if tracing is enabled for the MultiStore.
@@ -381,7 +407,7 @@ func (rs *Store) Commit() types.CommitID {
 
 	// Determine if pruneHeight height needs to be added to the list of heights to
 	// be pruned, where pruneHeight = (commitHeight - 1) - KeepRecent.
-	if int64(rs.pruningOpts.KeepRecent) < previousHeight {
+	if rs.pruningOpts.Interval > 0 && int64(rs.pruningOpts.KeepRecent) < previousHeight {
 		pruneHeight := previousHeight - int64(rs.pruningOpts.KeepRecent)
 		// We consider this height to be pruned iff:
 		//
@@ -452,7 +478,7 @@ func (rs *Store) CacheMultiStore() types.CacheMultiStore {
 	for k, v := range rs.stores {
 		stores[k] = v
 	}
-	return cachemulti.NewStore(rs.db, stores, rs.keysByName, rs.traceWriter, rs.traceContext, rs.listeners)
+	return cachemulti.NewStore(rs.db, stores, rs.keysByName, rs.traceWriter, rs.getTracingContext(), rs.listeners)
 }
 
 // CacheMultiStoreWithVersion is analogous to CacheMultiStore except that it
@@ -482,7 +508,7 @@ func (rs *Store) CacheMultiStoreWithVersion(version int64) (types.CacheMultiStor
 		}
 	}
 
-	return cachemulti.NewStore(rs.db, cachedStores, rs.keysByName, rs.traceWriter, rs.traceContext, rs.listeners), nil
+	return cachemulti.NewStore(rs.db, cachedStores, rs.keysByName, rs.traceWriter, rs.getTracingContext(), rs.listeners), nil
 }
 
 // GetStore returns a mounted Store for a given StoreKey. If the StoreKey does
@@ -514,7 +540,7 @@ func (rs *Store) GetKVStore(key types.StoreKey) types.KVStore {
 	store := s.(types.KVStore)
 
 	if rs.TracingEnabled() {
-		store = tracekv.NewStore(store, rs.traceWriter, rs.traceContext)
+		store = tracekv.NewStore(store, rs.traceWriter, rs.getTracingContext())
 	}
 	if rs.ListeningEnabled(key) {
 		store = listenkv.NewStore(store, key, rs.listeners[key])
@@ -876,9 +902,9 @@ func (rs *Store) loadCommitStoreFromParams(key types.StoreKey, id types.CommitID
 		var err error
 
 		if params.initialVersion == 0 {
-			store, err = iavl.LoadStore(db, id, rs.lazyLoading)
+			store, err = iavl.LoadStore(db, id, rs.lazyLoading, rs.iavlCacheSize)
 		} else {
-			store, err = iavl.LoadStoreWithInitialVersion(db, id, rs.lazyLoading, params.initialVersion)
+			store, err = iavl.LoadStoreWithInitialVersion(db, id, rs.lazyLoading, params.initialVersion, rs.iavlCacheSize)
 		}
 
 		if err != nil {

@@ -69,6 +69,8 @@ type BaseConfig struct {
 	// IndexEvents defines the set of events in the form {eventType}.{attributeKey},
 	// which informs Tendermint what to index. If empty, all events will be indexed.
 	IndexEvents []string `mapstructure:"index-events"`
+	// IavlCacheSize set the size of the iavl tree cache.
+	IAVLCacheSize uint64 `mapstructure:"iavl-cache-size"`
 }
 
 // APIConfig defines the API listener configuration.
@@ -209,6 +211,7 @@ func DefaultConfig() *Config {
 			PruningInterval:   "0",
 			MinRetainBlocks:   0,
 			IndexEvents:       make([]string, 0),
+			IAVLCacheSize:     781250, // 50 MB
 		},
 		Telemetry: telemetry.Config{
 			Enabled:      false,
@@ -268,6 +271,7 @@ func GetConfig(v *viper.Viper) Config {
 			HaltTime:          v.GetUint64("halt-time"),
 			IndexEvents:       v.GetStringSlice("index-events"),
 			MinRetainBlocks:   v.GetUint64("min-retain-blocks"),
+			IAVLCacheSize:     v.GetUint64("iavl-cache-size"),
 		},
 		Telemetry: telemetry.Config{
 			ServiceName:             v.GetString("telemetry.service-name"),
@@ -316,6 +320,11 @@ func GetConfig(v *viper.Viper) Config {
 func (c Config) ValidateBasic() error {
 	if c.BaseConfig.MinGasPrices == "" {
 		return sdkerrors.ErrAppConfig.Wrap("set min gas price in app.toml or flag or env variable")
+	}
+	if c.Pruning == storetypes.PruningOptionEverything && c.StateSync.SnapshotInterval > 0 {
+		return sdkerrors.ErrAppConfig.Wrapf(
+			"cannot enable state sync snapshots with '%s' pruning setting", storetypes.PruningOptionEverything,
+		)
 	}
 
 	return nil
