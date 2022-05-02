@@ -1,6 +1,5 @@
 package polling
 
-
 import (
 	"context"
 	"errors"
@@ -17,12 +16,12 @@ import (
 const (
 	magicForBlockDoesNotExistErr = "must be less than or equal to the current blockchain height"
 	baseDelayBetweenTransactions = 25 * time.Millisecond
-	maxDelayBetweenTransactions = 2500 * time.Millisecond
+	maxDelayBetweenTransactions  = 2500 * time.Millisecond
 )
 
 var (
 	errCapacityInvalid = errors.New("capacity must be 1 or greater")
-	errNoBlocks = errors.New("rpc call for latest block returned nil")
+	errNoBlocks        = errors.New("rpc call for latest block returned nil")
 )
 
 func PollForBlocks(ctx context.Context, logger log.Logger, c client.Client, outCapacity ...int) (out <-chan abci.ResponseDeliverTx, err error) {
@@ -63,8 +62,8 @@ func PollForBlocks(ctx context.Context, logger log.Logger, c client.Client, outC
 
 type slidingAverage struct {
 	data []float64
-	sum float64
-	idx int
+	sum  float64
+	idx  int
 }
 
 func newSlidingAverage(initialValue float64, sampleCount int) *slidingAverage {
@@ -80,7 +79,7 @@ func newSlidingAverage(initialValue float64, sampleCount int) *slidingAverage {
 	return result
 }
 
-func (sa *slidingAverage) push(v float64){
+func (sa *slidingAverage) push(v float64) {
 	// Deduct from the sum the value being evicted
 	sa.sum -= sa.data[sa.idx]
 
@@ -107,7 +106,7 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 	requiredDelay := blockPeriod
 
 	// compute the sliding average of the time between blocks, starting at double the block period
-	avg := newSlidingAverage(2 * blockPeriod.Seconds(), 20)
+	avg := newSlidingAverage(2*blockPeriod.Seconds(), 20)
 
 	var lastBlock *coretypes.ResultBlock
 
@@ -126,7 +125,7 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 			// Check to see if the block was requested too soon
 			if strings.Contains(err.Error(), magicForBlockDoesNotExistErr) {
 				// Wait a little bit longer, then ask for the block again
-				requiredDelay = blockPeriod/4
+				requiredDelay = blockPeriod / 4
 				requiredDelay += time.Duration(rand.Intn(250)) * time.Millisecond
 				continue
 			}
@@ -145,7 +144,7 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 			for !gotTransaction {
 				txResult, err := c.Tx(ctx, txn.Hash(), false)
 				if err != nil {
-					logger.Error("could not retrieve transaction from block" ,"height", block.Block.Height, "tx", txn.String())
+					logger.Error("could not retrieve transaction from block", "height", block.Block.Height, "tx", txn.String())
 
 					retryDelay := baseDelayBetweenTransactions
 					if failureCount != 0 {
@@ -162,8 +161,8 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 					}
 
 					select {
-					case <- time.After(retryDelay):
-					case <- ctx.Done():
+					case <-time.After(retryDelay):
+					case <-ctx.Done():
 						return ctx.Err()
 					}
 					continue
@@ -171,7 +170,7 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 				gotTransaction = true
 				select {
 				case output <- txResult.TxResult:
-				case <- ctx.Done():
+				case <-ctx.Done():
 					return ctx.Err()
 				}
 			}
@@ -184,7 +183,7 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 			blockTime := block.Block.Time.Sub(lastBlock.Block.Time)
 			avg.push(blockTime.Seconds())
 		}
-		nextBlockAt := block.Block.Time.Add(time.Millisecond * time.Duration(extraDelay + (1000.0 * avg.getAverage())))
+		nextBlockAt := block.Block.Time.Add(time.Millisecond * time.Duration(extraDelay+(1000.0*avg.getAverage())))
 		requiredDelay = nextBlockAt.Sub(now) // may be negative
 		lastBlock = block
 	}

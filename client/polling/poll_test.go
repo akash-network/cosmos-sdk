@@ -7,6 +7,7 @@ import (
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
+	tmrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpclocal "github.com/tendermint/tendermint/rpc/client/local"
 	rpctest "github.com/tendermint/tendermint/rpc/test"
@@ -14,10 +15,9 @@ import (
 	"os"
 	"testing"
 	"time"
-	tmrand "github.com/tendermint/tendermint/libs/rand"
 )
 
-func TestSlidingAverage(t *testing.T){
+func TestSlidingAverage(t *testing.T) {
 	const sampleCount = 100
 	sa := newSlidingAverage(1.0, sampleCount)
 	assert.Equal(t, sa.getAverage(), 1.0)
@@ -25,13 +25,13 @@ func TestSlidingAverage(t *testing.T){
 	sa.push(0.0)
 	assert.Equal(t, sa.getAverage(), 0.99)
 
-	for i := 0 ; i != sampleCount; i++ {
+	for i := 0; i != sampleCount; i++ {
 		sa.push(0.0)
 	}
 	assert.Equal(t, sa.getAverage(), 0.0)
 
 	randomNumber := rand.Float64()
-	for i := 0 ; i != sampleCount; i++ {
+	for i := 0; i != sampleCount; i++ {
 		sa.push(randomNumber)
 	}
 	assert.InEpsilon(t, randomNumber, sa.getAverage(), 0.0000001)
@@ -44,7 +44,7 @@ func TestSlidingAverage(t *testing.T){
 	assert.InEpsilon(t, total/sampleCount, sa.getAverage(), 0.001)
 }
 
-func TestPollForBlocksError(t *testing.T){
+func TestPollForBlocksError(t *testing.T) {
 	ch, err := PollForBlocks(context.Background(), log.TestingLogger(), nil, 0)
 	require.Error(t, err)
 	require.Nil(t, ch)
@@ -81,14 +81,14 @@ func TestPollForBlocks(t *testing.T) {
 	err = client.WaitForHeight(c, 1, nil)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second * 30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	ch, err := PollForBlocks(ctx, log.TestingLogger(), c)
 	require.NoError(t, err)
 	require.NotNil(t, ch)
 
 	select {
-	case <- ch:
+	case <-ch:
 		t.Fatal("should not have received a transaction yet")
 	default:
 	}
@@ -100,17 +100,17 @@ func TestPollForBlocks(t *testing.T) {
 	require.Equal(t, broadcastResult.DeliverTx.Code, uint32(0))
 
 	select {
-	case txn := <- ch:
+	case txn := <-ch:
 		require.NotNil(t, txn)
 		require.NotEmpty(t, txn.GetEvents())
 		require.Equal(t, txn.GetEvents(), broadcastResult.DeliverTx.GetEvents())
-	case <- ctx.Done():
+	case <-ctx.Done():
 		t.Fatal("timed out waiting on transaction event")
 	}
 
 	txnCount := 1 + tmrand.Intn(100)
 
-	for i := 0 ; i != txnCount; i++ {
+	for i := 0; i != txnCount; i++ {
 		_, _, tx := MakeTxKV()
 		broadcastResult, err := c.BroadcastTxCommit(ctx, tx)
 		require.NoError(t, err)
@@ -131,4 +131,3 @@ func TestPollForBlocks(t *testing.T) {
 	}
 	require.Equal(t, rxCnt, txnCount)
 }
-
