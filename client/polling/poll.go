@@ -51,6 +51,7 @@ func PollForBlocks(ctx context.Context, logger log.Logger, c client.Client, outC
 
 	// Run until context dies
 	go func() {
+		defer close(outc)
 		err := pollForever(ctx, logger, c, height, outc)
 		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return
