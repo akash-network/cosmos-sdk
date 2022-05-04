@@ -2,11 +2,9 @@ package polling
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tendermint/tendermint/abci/example/kvstore"
 	"github.com/tendermint/tendermint/libs/log"
-	"github.com/tendermint/tendermint/libs/rand"
 	tmrand "github.com/tendermint/tendermint/libs/rand"
 	"github.com/tendermint/tendermint/rpc/client"
 	rpclocal "github.com/tendermint/tendermint/rpc/client/local"
@@ -17,32 +15,7 @@ import (
 	"time"
 )
 
-func TestSlidingAverage(t *testing.T) {
-	const sampleCount = 100
-	sa := newSlidingAverage(1.0, sampleCount)
-	assert.Equal(t, sa.getAverage(), 1.0)
 
-	sa.push(0.0)
-	assert.Equal(t, sa.getAverage(), 0.99)
-
-	for i := 0; i != sampleCount; i++ {
-		sa.push(0.0)
-	}
-	assert.Equal(t, sa.getAverage(), 0.0)
-
-	randomNumber := rand.Float64()
-	for i := 0; i != sampleCount; i++ {
-		sa.push(randomNumber)
-	}
-	assert.InEpsilon(t, randomNumber, sa.getAverage(), 0.0000001)
-
-	total := 0.0
-	for i := 0; i != sampleCount; i++ {
-		total += float64(i)
-		sa.push(float64(i))
-	}
-	assert.InEpsilon(t, total/sampleCount, sa.getAverage(), 0.001)
-}
 
 func TestPollForBlocksError(t *testing.T) {
 	ch, err := PollForBlocks(context.Background(), log.TestingLogger(), nil, 0)
