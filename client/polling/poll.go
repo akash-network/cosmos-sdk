@@ -17,6 +17,7 @@ const (
 	magicForBlockDoesNotExistErr = "must be less than or equal to the current blockchain height"
 	baseDelayBetweenTransactions = 25 * time.Millisecond
 	maxDelayBetweenTransactions  = 2500 * time.Millisecond
+	maxDelayBetweenBlocks        = 10 * time.Second
 )
 
 var (
@@ -28,7 +29,7 @@ func PollForBlocks(ctx context.Context, logger log.Logger, c client.Client, outC
 	logger = logger.With("cmp", "block-poller")
 
 	// Create an outgoing channel for events
-	outCap := 1
+	outCap := 0
 	if len(outCapacity) > 0 {
 		outCap = outCapacity[0]
 		if outCap < 1 {
@@ -43,6 +44,8 @@ func PollForBlocks(ctx context.Context, logger log.Logger, c client.Client, outC
 		return nil, err
 	}
 
+	// If a block isn't returned, this means the network was just started and hasn't produced a block. This is
+	// an incredibly obtuse corner case, so just return an error saying this
 	if block == nil || block.Block == nil {
 		return nil, errNoBlocks
 	}
@@ -61,21 +64,23 @@ func PollForBlocks(ctx context.Context, logger log.Logger, c client.Client, outC
 	return outc, nil
 }
 
-
-
 func pollForever(ctx context.Context, logger log.Logger, c client.Client, startHeight int64, output chan<- abci.ResponseDeliverTx) error {
-	const extraDelay = 100.0 // milliseconds
+	const extraDelay = 100.0 * time.Millisecond
 	const blockPeriod = time.Second * 5
 	currentHeight := startHeight
 	requiredDelay := blockPeriod
 
-	// compute the sliding average of the time between blocks, starting at double the block period
-	avg := newSlidingAverage(2*blockPeriod.Seconds(), 20)
+	// compute the sliding average of the time between blocks, starting at a value higher than block period
+	avg := newSlidingAverage(1.5*blockPeriod.Seconds(), 20)
 
 	var lastBlock *coretypes.ResultBlock
 
 	for {
 		if requiredDelay > 0 {
+			// Cap maximum delay
+			if requiredDelay > maxDelayBetweenBlocks {
+				requiredDelay = maxDelayBetweenBlocks
+			}
 			delay := time.After(requiredDelay)
 			select {
 			case <-ctx.Done():
@@ -102,38 +107,35 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 		currentHeight++
 
 		txs := block.Block.Txs
-		failureCount := 0
+
 		for _, txn := range txs {
-			gotTransaction := false
-			for !gotTransaction {
+			failureCount := uint32(0)
+			for {
 				txResult, err := c.Tx(ctx, txn.Hash(), false)
-				if err != nil {
-					logger.Error("could not retrieve transaction from block", "height", block.Block.Height, "tx", txn.String())
-
-					retryDelay := baseDelayBetweenTransactions
-					if failureCount != 0 {
-						retryDelay += 3 * time.Millisecond * time.Duration(math.Pow(1.5, float64(failureCount)))
-					}
-					if retryDelay > maxDelayBetweenTransactions {
-						retryDelay = maxDelayBetweenTransactions
-					}
-
-					retryDelay += baseDelayBetweenTransactions * time.Duration(rand.Float64())
-
-					if failureCount < math.MaxInt32 {
-						failureCount += 1
-					}
-
+				if err == nil {
 					select {
-					case <-time.After(retryDelay):
+					case output <- txResult.TxResult:
 					case <-ctx.Done():
 						return ctx.Err()
 					}
-					continue
+					break // transaction received and sent to output, terminate the inner loop
 				}
-				gotTransaction = true
+
+				logger.Error("could not retrieve transaction from block", "height", block.Block.Height, "tx", txn.String())
+				retryDelay := baseDelayBetweenTransactions
+				if failureCount != 0 {
+					retryDelay += 3 * time.Millisecond * time.Duration(math.Pow(1.5, float64(failureCount)))
+				}
+				retryDelay += baseDelayBetweenTransactions * (time.Millisecond * time.Duration(rand.Float64()*10))
+				if retryDelay > maxDelayBetweenTransactions {
+					retryDelay = maxDelayBetweenTransactions
+				}
+				if failureCount < math.MaxUint32 {
+					failureCount += 1
+				}
+
 				select {
-				case output <- txResult.TxResult:
+				case <-time.After(retryDelay):
 				case <-ctx.Done():
 					return ctx.Err()
 				}
@@ -141,13 +143,12 @@ func pollForever(ctx context.Context, logger log.Logger, c client.Client, startH
 		}
 
 		now := time.Now()
-
 		// Update the sliding average
 		if nil != lastBlock {
 			blockTime := block.Block.Time.Sub(lastBlock.Block.Time)
 			avg.push(blockTime.Seconds())
 		}
-		nextBlockAt := block.Block.Time.Add(time.Millisecond * time.Duration(extraDelay+(1000.0*avg.getAverage())))
+		nextBlockAt := block.Block.Time.Add(time.Millisecond*time.Duration(1000.0*avg.getAverage()) + extraDelay)
 		requiredDelay = nextBlockAt.Sub(now) // may be negative
 		lastBlock = block
 	}
