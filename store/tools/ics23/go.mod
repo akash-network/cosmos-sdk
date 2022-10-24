@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/confio/ics23/go v0.7.0
-	github.com/cosmos/cosmos-sdk v0.46.2
-	github.com/cosmos/iavl v0.19.2-0.20220916140702-9b6be3095313
+	github.com/cosmos/cosmos-sdk v0.46.3
+	github.com/cosmos/iavl v0.19.3
 	github.com/lazyledger/smt v0.2.1-0.20210709230900-03ea40719554
 	github.com/tendermint/tendermint v0.37.0-alpha.2
 	github.com/tendermint/tm-db v0.6.7
@@ -35,8 +35,8 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/net v0.0.0-20220726230323-06994584191e // indirect
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
+	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
+	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
