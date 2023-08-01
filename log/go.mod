@@ -3,7 +3,7 @@ module cosmossdk.io/log
 go 1.20
 
 require (
-	github.com/rs/zerolog v1.29.1
+	github.com/rs/zerolog v1.30.0
 	gotest.tools/v3 v3.4.0
 )
 
