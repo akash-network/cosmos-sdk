@@ -3,10 +3,10 @@ module cosmossdk.io/tools/cosmovisor
 go 1.20
 
 require (
-	cosmossdk.io/log v1.1.0
+	cosmossdk.io/log v1.2.0
 	cosmossdk.io/x/upgrade v0.0.0-20230614103911-b3da8bb4e801
 	github.com/otiai10/copy v1.11.0
-	github.com/rs/zerolog v1.29.1
+	github.com/rs/zerolog v1.30.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 )
@@ -167,7 +167,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gotest.tools/v3 v3.4.0 // indirect
+	gotest.tools/v3 v3.5.0 // indirect
 	nhooyr.io/websocket v1.8.6 // indirect
 	pgregory.net/rapid v1.0.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
