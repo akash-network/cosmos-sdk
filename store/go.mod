@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/btree v1.7.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	modernc.org/sqlite v1.27.0
+	modernc.org/sqlite v1.28.0
 )
 
 require (
