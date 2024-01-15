@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/core v0.12.0
 	cosmossdk.io/depinject v1.0.0-alpha.4
 	cosmossdk.io/errors v1.0.0
-	cosmossdk.io/log v1.2.1
+	cosmossdk.io/log v1.3.0
 	cosmossdk.io/math v1.2.0
 	cosmossdk.io/store v1.0.0
 	cosmossdk.io/x/bank v0.0.0-00010101000000-000000000000
@@ -144,7 +144,7 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20231016165738-49dd2c1f3d0b // indirect
