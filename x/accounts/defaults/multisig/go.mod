@@ -3,7 +3,7 @@ module cosmossdk.io/x/accounts/defaults/multisig
 go 1.23.3
 
 require (
-	cosmossdk.io/collections v1.0.0
+	cosmossdk.io/collections v1.1.0
 	cosmossdk.io/core v1.0.0
 	cosmossdk.io/math v1.5.0
 	cosmossdk.io/x/accounts v0.0.0-00010101000000-000000000000
@@ -12,7 +12,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.53.0
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/stretchr/testify v1.10.0
-	google.golang.org/protobuf v1.36.2
+	google.golang.org/protobuf v1.36.3
 )
 
 require (
