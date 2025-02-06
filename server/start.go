@@ -318,7 +318,7 @@ func startInProcess(ctx *Context, clientCtx client.Context, appCreator types.App
 			return err
 		}
 
-		clientCtx := clientCtx.WithHomeDir(home).WithChainID(genDoc.ChainID)
+		clientCtx := clientCtx.WithHomeDir(home).WithChainID(genDoc.GenesisDoc.ChainID)
 
 		apiSrv = api.New(clientCtx, ctx.Logger.With("module", "api-server"))
 		app.RegisterAPIRoutes(apiSrv, config.API)
