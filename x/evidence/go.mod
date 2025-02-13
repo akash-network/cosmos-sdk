@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	cosmossdk.io/api v0.8.0
-	cosmossdk.io/collections v1.0.0
+	cosmossdk.io/collections v1.1.0
 	cosmossdk.io/core v1.0.0
 	cosmossdk.io/core/testing v0.0.1
 	cosmossdk.io/depinject v1.1.0
@@ -21,7 +21,7 @@ require (
 	go.uber.org/mock v0.5.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53
 	google.golang.org/grpc v1.69.2
-	google.golang.org/protobuf v1.36.2
+	google.golang.org/protobuf v1.36.3
 )
 
 require (
