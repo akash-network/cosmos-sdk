@@ -1,54 +1,78 @@
+---
 "C:x/auth":
-  - x/auth/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/auth/**/*
 "C:x/authz":
-  - x/authz/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/authz/**/*
 "C:x/bank":
-  - x/bank/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/bank/**/*
 "C:x/capability":
-  - x/capability/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/capability/**/*
 "C:x/crisis":
-  - x/crisis/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/crisis/**/*
 "C:x/distribution":
-  - x/distribution/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/distribution/**/*
 "C:x/evidence":
-  - x/evidence/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/evidence/**/*
 "C:x/feegrant":
-  - x/feegrant/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/feegrant/**/*
 "C:x/genutil":
-  - x/genutil/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/genutil/**/*
 "C:x/gov":
-  - x/gov/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/gov/**/*
 "C:x/mint":
-  - x/mint/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/mint/**/*
 "C:x/params":
-  - x/params/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/params/**/*
 "C:Simulations":
-  - x/simulation/**/*
-  - x/*/simulation/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/simulation/**/*
+      - any-glob-to-any-file: x/*/simulation/**/*
 "C:x/slashing":
-  - x/slashing/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/slashing/**/*
 "C:x/staking":
-  - x/staking/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/staking/**/*
 "C:x/upgrade":
-  - x/upgrade/**/*
+  - changed-files:
+      - any-glob-to-any-file: x/upgrade/**/*
 "C:Cosmovisor":
-  - cosmovisor/**/*
+  - changed-files:
+      - any-glob-to-any-file: cosmovisor/**/*
 "C:Rosetta":
-  - contrib/rosetta/**/*
+  - changed-files:
+      - any-glob-to-any-file: contrib/rosetta/**/*
 "C:Keys":
-  - client/keys/**/*
+  - changed-files:
+      - any-glob-to-any-file: client/keys/**/*
 "Type: Build":
-  - Makefile
-  - Dockerfile
-  - docker-compose.yml
-  - scripts/*
+  - changed-files:
+      - any-glob-to-any-file: Makefile
+      - any-glob-to-any-file: Dockerfile
+      - any-glob-to-any-file: docker-compose.yml
+      - any-glob-to-any-file: scripts/*
 "Type: CI":
-  - .github/**/*.yml
-  - buf.yaml
-  - .mergify.yml
-  - .golangci.yml
+  - changed-files:
+      - any-glob-to-any-file: .github/**/*.yml
+      - any-glob-to-any-file: buf.yaml
+      - any-glob-to-any-file: .mergify.yml
+      - any-glob-to-any-file: .golangci.yml
 "C:CLI":
-  - client/**/*
+  - changed-files:
+      - any-glob-to-any-file: client/**/*
   - x/*/client/**/*
 "Type: ADR":
-  - docs/architecture/**/*
+  - changed-files:
+      - any-glob-to-any-file: docs/architecture/**/*
