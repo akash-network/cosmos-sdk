@@ -15,9 +15,11 @@ import (
 //
 // - 0x01<grant_Bytes>: Grant
 // - 0x02<grant_expiration_Bytes>: GrantQueueItem
+// - 0x03<grant_Bytes>: Grant by grantee
 var (
 	GrantKey         = []byte{0x01} // prefix for each key
 	GrantQueuePrefix = []byte{0x02}
+	GranteeKey       = []byte{0x03} // prefix for each key
 )
 
 var lenTime = len(sdk.FormatTimeBytes(time.Now()))
@@ -34,6 +36,19 @@ func grantStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress, msgType strin
 	granter = address.MustLengthPrefix(granter)
 	grantee = address.MustLengthPrefix(grantee)
 	key := sdk.AppendLengthPrefixedBytes(GrantKey, granter, grantee, m)
+
+	return key
+}
+
+// granteeStoreKey - return authorization store key
+// Items are stored with the following key: values
+//
+// - 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+func granteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
+	grantee = address.MustLengthPrefix(grantee)
+	granter = address.MustLengthPrefix(granter)
+
+	key := sdk.AppendLengthPrefixedBytes(GranteeKey, grantee, granter)
 
 	return key
 }
@@ -74,6 +89,27 @@ func parseGrantQueueKey(key []byte) (time.Time, sdk.AccAddress, sdk.AccAddress, 
 	return exp, granter, grantee, nil
 }
 
+// parseGranteeStoreKey key is of format:
+// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+func parseGranteeStoreKey(key []byte) (sdk.AccAddress, sdk.AccAddress) {
+	// key is of format:
+	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+	kv.AssertKeyAtLeastLength(key, 2)
+	key = key[1:] // remove prefix key
+	granteeAddrLen := key[0]
+	kv.AssertKeyAtLeastLength(key, int(granteeAddrLen))
+	key = key[1:]
+	granteeAddr := key[:granteeAddrLen]
+	kv.AssertKeyAtLeastLength(key, 1)
+	key = key[granteeAddrLen:]
+	granterAddrLen := int(key[0])
+	key = key[1:]
+	kv.AssertKeyLength(key, granterAddrLen)
+	granterAddr := key
+
+	return granteeAddr, granterAddr
+}
+
 // GrantQueueKey - return grant queue store key. If a given grant doesn't have a defined
 // expiration, then it should not be used in the pruning queue.
 // Key format is:
@@ -95,5 +131,5 @@ func GrantQueueTimePrefix(expiration time.Time) []byte {
 // firstAddressFromGrantStoreKey parses the first address only
 func firstAddressFromGrantStoreKey(key []byte) sdk.AccAddress {
 	addrLen := key[0]
-	return sdk.AccAddress(key[1 : 1+addrLen])
+	return key[1 : 1+addrLen]
 }

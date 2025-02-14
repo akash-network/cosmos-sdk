@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -202,6 +203,8 @@ func (k Keeper) SaveGrant(ctx sdk.Context, grantee, granter sdk.AccAddress, auth
 	bz := k.cdc.MustMarshal(&grant)
 	store.Set(skey, bz)
 
+	IncGranteeGrants(store, grantee, granter)
+
 	return ctx.EventManager().EmitTypedEvent(&authz.EventGrant{
 		MsgTypeUrl: authorization.MsgTypeURL(),
 		Granter:    granter.String(),
@@ -228,6 +231,8 @@ func (k Keeper) DeleteGrant(ctx sdk.Context, grantee sdk.AccAddress, granter sdk
 
 	store.Delete(skey)
 
+	decGranteeGrants(store, grantee, granter)
+
 	return ctx.EventManager().EmitTypedEvent(&authz.EventRevoke{
 		MsgTypeUrl: msgType,
 		Granter:    granter.String(),
@@ -240,7 +245,9 @@ func (k Keeper) GetAuthorizations(ctx sdk.Context, grantee sdk.AccAddress, grant
 	store := ctx.KVStore(k.storeKey)
 	key := grantStoreKey(grantee, granter, "")
 	iter := sdk.KVStorePrefixIterator(store, key)
-	defer iter.Close()
+	defer func() {
+		_ = iter.Close()
+	}()
 
 	var authorization authz.Grant
 	var authorizations []authz.Authorization
@@ -287,10 +294,12 @@ func (k Keeper) IterateGrants(ctx sdk.Context,
 	handler func(granterAddr sdk.AccAddress, granteeAddr sdk.AccAddress, grant authz.Grant) bool,
 ) {
 	store := ctx.KVStore(k.storeKey)
+
 	iter := sdk.KVStorePrefixIterator(store, GrantKey)
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		var grant authz.Grant
+
 		granterAddr, granteeAddr, _ := parseGrantStoreKey(iter.Key())
 		k.cdc.MustUnmarshal(iter.Value(), &grant)
 		if handler(granterAddr, granteeAddr, grant) {
@@ -408,4 +417,35 @@ func (k Keeper) DequeueAndDeleteExpiredGrants(ctx sdk.Context) error {
 	}
 
 	return nil
+}
+
+func IncGranteeGrants(store sdk.KVStore, grantee, granter sdk.AccAddress) {
+	key := granteeStoreKey(grantee, granter)
+
+	count := sdk.NewInt(0)
+
+	if store.Has(key) {
+		val := store.Get(key)
+		bi := new(big.Int).SetBytes(val).Int64()
+
+		count = count.AddRaw(bi + 1)
+
+	}
+
+	store.Set(key, count.BigInt().Bytes())
+}
+
+func decGranteeGrants(store sdk.KVStore, grantee, granter sdk.AccAddress) {
+	skey := granteeStoreKey(grantee, granter)
+	val := store.Get(skey)
+
+	bi := new(big.Int).SetBytes(val).Int64()
+	bi--
+
+	if bi == 0 {
+		store.Delete(skey)
+	} else {
+		count := sdk.NewInt(bi)
+		store.Set(skey, count.BigInt().Bytes())
+	}
 }
