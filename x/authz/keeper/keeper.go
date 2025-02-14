@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
+	sdkmath "cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -227,6 +229,11 @@ func (k Keeper) SaveGrant(ctx context.Context, grantee, granter sdk.AccAddress, 
 		return err
 	}
 
+	err = IncGranteeGrants(store, grantee, granter)
+	if err != nil {
+		return err
+	}
+
 	return sdkCtx.EventManager().EmitTypedEvent(&authz.EventGrant{
 		MsgTypeUrl: authorization.MsgTypeURL(),
 		Granter:    granter.String(),
@@ -256,6 +263,10 @@ func (k Keeper) DeleteGrant(ctx context.Context, grantee, granter sdk.AccAddress
 		return err
 	}
 
+	err = decGranteeGrants(store, grantee, granter)
+	if err != nil {
+		return err
+	}
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.EventManager().EmitTypedEvent(&authz.EventRevoke{
 		MsgTypeUrl: msgType,
@@ -268,10 +279,14 @@ func (k Keeper) DeleteGrant(ctx context.Context, grantee, granter sdk.AccAddress
 func (k Keeper) GetAuthorizations(ctx context.Context, grantee, granter sdk.AccAddress) ([]authz.Authorization, error) {
 	store := runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx))
 	key := grantStoreKey(grantee, granter, "")
+
 	iter := storetypes.KVStorePrefixIterator(store, key)
-	defer iter.Close()
+	defer func() {
+		_ = iter.Close()
+	}()
 
 	var authorizations []authz.Authorization
+
 	for ; iter.Valid(); iter.Next() {
 		var authorization authz.Grant
 		if err := k.cdc.Unmarshal(iter.Value(), &authorization); err != nil {
@@ -318,6 +333,7 @@ func (k Keeper) IterateGrants(ctx context.Context,
 ) {
 	store := runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx))
 	iter := storetypes.KVStorePrefixIterator(store, GrantKey)
+
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		var grant authz.Grant
@@ -447,4 +463,41 @@ func (k Keeper) DequeueAndDeleteExpiredGrants(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func IncGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddress) error {
+	key := granteeStoreKey(grantee, granter)
+
+	count := sdkmath.NewInt(0)
+
+	if exists, _ := store.Has(key); exists {
+		val, err := store.Get(key)
+		if err != nil {
+			return err
+		}
+
+		bi := new(big.Int).SetBytes(val).Int64()
+
+		count = count.AddRaw(bi + 1)
+	}
+
+	return store.Set(key, count.BigInt().Bytes())
+}
+
+func decGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddress) error {
+	skey := granteeStoreKey(grantee, granter)
+	val, err := store.Get(skey)
+	if err != nil {
+		return err
+	}
+
+	bi := new(big.Int).SetBytes(val).Int64()
+	bi--
+
+	if bi == 0 {
+		return store.Delete(skey)
+	}
+
+	count := sdkmath.NewInt(bi)
+	return store.Set(skey, count.BigInt().Bytes())
 }
