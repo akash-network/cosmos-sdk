@@ -8,9 +8,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 )
 
-// Keys for store prefixes
+// - 0x01<grant_Bytes>: Grant
+// - 0x03<grant_Bytes>: Grant
 var (
-	GrantKey = []byte{0x01} // prefix for each key
+	GrantKey   = []byte{0x01} // prefix for each key
+	GranteeKey = []byte{0x03} // prefix for each key
 )
 
 // StoreKey is the store key string for authz
@@ -31,21 +33,58 @@ func grantStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress, msgType strin
 	copy(key[1:], granter)
 	copy(key[1+len(granter):], grantee)
 	copy(key[l-len(m):], m)
-	//	fmt.Println(">>>> len", l, key)
+
 	return key
 }
 
-// addressesFromGrantStoreKey - split granter & grantee address from the authorization key
-func addressesFromGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAddress) {
+// granteeStoreKey - return authorization store key
+// Items are stored with the following key: values
+//
+// - 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+func granteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
+	grantee = address.MustLengthPrefix(grantee)
+	granter = address.MustLengthPrefix(granter)
+
+	l := 1 + len(grantee) + len(granter)
+	key := make([]byte, l)
+
+	copy(key, GranteeKey)
+	copy(key[1:], grantee)
+	copy(key[1+len(grantee):], granter)
+
+	return key
+}
+
+// AddressesFromGrantStoreKey - split granter & grantee address from the authorization key
+func AddressesFromGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAddress) {
 	// key is of format:
 	// 0x01<granterAddressLen (1 Byte)><granterAddress_Bytes><granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgType_Bytes>
 	kv.AssertKeyAtLeastLength(key, 2)
 	granterAddrLen := key[1] // remove prefix key
 	kv.AssertKeyAtLeastLength(key, int(3+granterAddrLen))
-	granterAddr = sdk.AccAddress(key[2 : 2+granterAddrLen])
+	granterAddr = key[2 : 2+granterAddrLen]
 	granteeAddrLen := int(key[2+granterAddrLen])
 	kv.AssertKeyAtLeastLength(key, 4+int(granterAddrLen+byte(granteeAddrLen)))
-	granteeAddr = sdk.AccAddress(key[3+granterAddrLen : 3+granterAddrLen+byte(granteeAddrLen)])
+	granteeAddr = key[3+granterAddrLen : 3+granterAddrLen+byte(granteeAddrLen)]
+
+	return granterAddr, granteeAddr
+}
+
+func AddressesFromGranteeStoreKey(key []byte) (granteeAddr, granterAddr sdk.AccAddress) {
+	// key is of format:
+	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+	kv.AssertKeyAtLeastLength(key, 2)
+	key = key[1:]
+	granteeAddrLen := key[0] // remove prefix key
+	kv.AssertKeyAtLeastLength(key, int(granteeAddrLen))
+	key = key[1:]
+	granteeAddr = key[:granteeAddrLen]
+	kv.AssertKeyAtLeastLength(key, 1)
+	key = key[granteeAddrLen:]
+	granterAddrLen := int(key[0])
+	key = key[1:]
+	kv.AssertKeyLength(key, granterAddrLen)
+	granteeAddr = key
 
 	return granterAddr, granteeAddr
 }
@@ -53,5 +92,5 @@ func addressesFromGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAdd
 // firstAddressFromGrantStoreKey parses the first address only
 func firstAddressFromGrantStoreKey(key []byte) sdk.AccAddress {
 	addrLen := key[0]
-	return sdk.AccAddress(key[1 : 1+addrLen])
+	return key[1 : 1+addrLen]
 }
