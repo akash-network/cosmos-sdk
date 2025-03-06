@@ -45,7 +45,7 @@ func granteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
 	grantee = address.MustLengthPrefix(grantee)
 	granter = address.MustLengthPrefix(granter)
 
-	l := 1 + len(grantee) + len(granter)
+	l := len(GranteeKey) + len(grantee) + len(granter)
 	key := make([]byte, l)
 
 	copy(key, GranteeKey)
@@ -56,37 +56,37 @@ func granteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
 }
 
 // AddressesFromGrantStoreKey - split granter & grantee address from the authorization key
-func AddressesFromGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAddress) {
+func AddressesFromGrantStoreKey(key []byte) (sdk.AccAddress, sdk.AccAddress) {
 	// key is of format:
 	// 0x01<granterAddressLen (1 Byte)><granterAddress_Bytes><granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgType_Bytes>
 	kv.AssertKeyAtLeastLength(key, 2)
 	granterAddrLen := key[1] // remove prefix key
 	kv.AssertKeyAtLeastLength(key, int(3+granterAddrLen))
-	granterAddr = key[2 : 2+granterAddrLen]
+	granterAddr := key[2 : 2+granterAddrLen]
 	granteeAddrLen := int(key[2+granterAddrLen])
 	kv.AssertKeyAtLeastLength(key, 4+int(granterAddrLen+byte(granteeAddrLen)))
-	granteeAddr = key[3+granterAddrLen : 3+granterAddrLen+byte(granteeAddrLen)]
+	granteeAddr := key[3+granterAddrLen : 3+granterAddrLen+byte(granteeAddrLen)]
 
 	return granterAddr, granteeAddr
 }
 
-func AddressesFromGranteeStoreKey(key []byte) (granteeAddr, granterAddr sdk.AccAddress) {
+func AddressesFromGranteeStoreKey(key []byte) (sdk.AccAddress, sdk.AccAddress) {
 	// key is of format:
 	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
 	kv.AssertKeyAtLeastLength(key, 2)
-	key = key[1:]
-	granteeAddrLen := key[0] // remove prefix key
+	key = key[1:] // remove prefix key
+	granteeAddrLen := key[0]
 	kv.AssertKeyAtLeastLength(key, int(granteeAddrLen))
 	key = key[1:]
-	granteeAddr = key[:granteeAddrLen]
+	granteeAddr := key[:granteeAddrLen]
 	kv.AssertKeyAtLeastLength(key, 1)
 	key = key[granteeAddrLen:]
 	granterAddrLen := int(key[0])
 	key = key[1:]
 	kv.AssertKeyLength(key, granterAddrLen)
-	granteeAddr = key
+	granterAddr := key
 
-	return granterAddr, granteeAddr
+	return granteeAddr, granterAddr
 }
 
 // firstAddressFromGrantStoreKey parses the first address only

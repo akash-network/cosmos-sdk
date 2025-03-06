@@ -26,3 +26,13 @@ func TestGrantkey(t *testing.T) {
 	require.Equal(granter, granter1)
 	require.Equal(grantee, grantee1)
 }
+
+func TestGranteeKey(t *testing.T) {
+	key := granteeStoreKey(grantee, granter)
+
+	require.Len(t, key, len(GranteeKey)+len(address.MustLengthPrefix(grantee))+len(address.MustLengthPrefix(granter)))
+
+	grantee1, granter1  := AddressesFromGranteeStoreKey(key)
+	require.Equal(t, granter, granter1)
+	require.Equal(t, grantee, grantee1)
+}
