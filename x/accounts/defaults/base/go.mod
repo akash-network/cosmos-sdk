@@ -2,9 +2,11 @@ module cosmossdk.io/x/accounts/defaults/base
 
 go 1.23.5
 
+toolchain go1.24.1
+
 require (
 	cosmossdk.io/api v0.8.2
-	cosmossdk.io/collections v1.1.0
+	cosmossdk.io/collections v1.2.0
 	cosmossdk.io/core v1.0.0
 	cosmossdk.io/depinject v1.1.0
 	cosmossdk.io/x/accounts v0.0.0-00010101000000-000000000000
@@ -13,7 +15,7 @@ require (
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/stretchr/testify v1.10.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -154,7 +156,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
-	pgregory.net/rapid v1.1.0 // indirect
+	pgregory.net/rapid v1.2.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
