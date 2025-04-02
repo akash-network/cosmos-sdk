@@ -2,8 +2,10 @@ module cosmossdk.io/x/accounts/defaults/lockup
 
 go 1.23.5
 
+toolchain go1.24.1
+
 require (
-	cosmossdk.io/collections v1.1.0
+	cosmossdk.io/collections v1.2.0
 	cosmossdk.io/core v1.0.0
 	cosmossdk.io/x/accounts v0.0.0-00010101000000-000000000000
 	cosmossdk.io/x/bank v0.0.0-20240226161501-23359a0b6d91
@@ -143,11 +145,11 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250122153221-138b5a5a4fd4 // indirect
 	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
-	pgregory.net/rapid v1.1.0 // indirect
+	pgregory.net/rapid v1.2.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
