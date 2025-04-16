@@ -8,4 +8,4 @@ go 1.12
 // so there are no problems building this with any version of the SDK.
 // This module should only use the golang standard library (database/sql)
 // and cosmossdk.io/indexer/base.
-require cosmossdk.io/schema v1.0.0
+require cosmossdk.io/schema v1.1.0
