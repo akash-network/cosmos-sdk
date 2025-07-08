@@ -18,10 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'skip-sims')"
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - run: |-
+          go_version=$(grep -E '^go [0-9]{1,}.[0-9]{1,}(.[0-9]{1,})?$' "go.mod" | cut -d ' ' -f 2 | tr -d '\n')
+          echo "GOVERSION=${go_version}" >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.19"
+          go-version: "${{ env.GOVERSION }}"
           check-latest: true
       - run: make build
       - name: Install runsim
@@ -36,10 +39,13 @@ jobs:
     needs: [build]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - run: |-
+          go_version=$(grep -E '^go [0-9]{1,}.[0-9]{1,}(.[0-9]{1,})?$' "go.mod" | cut -d ' ' -f 2 | tr -d '\n')
+          echo "GOVERSION=${go_version}" >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.19"
+          go-version: "${{ env.GOVERSION }}"
           check-latest: true
       - uses: actions/cache@v3
         with:
@@ -53,10 +59,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - run: |-
+          go_version=$(grep -E '^go [0-9]{1,}.[0-9]{1,}(.[0-9]{1,})?$' "go.mod" | cut -d ' ' -f 2 | tr -d '\n')
+          echo "GOVERSION=${go_version}" >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.19"
+          go-version: "${{ env.GOVERSION }}"
           check-latest: true
       - uses: actions/cache@v3
         with:
@@ -71,10 +80,13 @@ jobs:
     needs: [build]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - run: |-
+          go_version=$(grep -E '^go [0-9]{1,}.[0-9]{1,}(.[0-9]{1,})?$' "go.mod" | cut -d ' ' -f 2 | tr -d '\n')
+          echo "GOVERSION=${go_version}" >> $GITHUB_ENV
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.19"
+          go-version: "${{ env.GOVERSION }}"
           check-latest: true
       - uses: actions/cache@v3
         with:
@@ -91,7 +103,7 @@ jobs:
     if: ${{ success() }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Get previous workflow status
         uses: ./.github/actions/last-workflow-status
         id: last_status
