@@ -12,7 +12,7 @@
 #
 # This image is pushed to the GHCR as https://ghcr.io/cosmos/simapp
 
-FROM --platform=$BUILDPLATFORM golang:1.19-alpine AS build-env
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build-env
 
 # Install minimum necessary dependencies
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev
@@ -30,7 +30,8 @@ COPY . .
 
 # Dockerfile Cross-Compilation Guide
 # https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide
-ARG TARGETOS TARGETARCH
+ARG TARGETOS
+ARG TARGETARCH
 
 # install simapp, remove packages
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH make build

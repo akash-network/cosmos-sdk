@@ -47,7 +47,7 @@ func (k Keeper) Grants(c context.Context, req *authz.QueryGrantsRequest) (*authz
 
 		authorizationAny, err := codectypes.NewAnyWithValue(authorization)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Errorf(codes.Internal, "%s", err.Error())
 		}
 		return &authz.QueryGrantsResponse{
 			Grants: []*authz.Grant{{
@@ -69,7 +69,7 @@ func (k Keeper) Grants(c context.Context, req *authz.QueryGrantsRequest) (*authz
 
 		authorizationAny, err := codectypes.NewAnyWithValue(auth1)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Errorf(codes.Internal, "%s", err.Error())
 		}
 		return &authz.Grant{
 			Authorization: authorizationAny,
@@ -111,7 +111,7 @@ func (k Keeper) GranterGrants(c context.Context, req *authz.QueryGranterGrantsRe
 
 		any, err := codectypes.NewAnyWithValue(auth1)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Errorf(codes.Internal, "%s", err.Error())
 		}
 
 		grantee := firstAddressFromGrantStoreKey(key)
@@ -177,7 +177,7 @@ func (k Keeper) GranteeGrants(c context.Context, req *authz.QueryGranteeGrantsRe
 
 			authorizationAny, err := codectypes.NewAnyWithValue(auth1)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
+				return nil, status.Errorf(codes.Internal, "%s", err.Error())
 			}
 
 			return &authz.GrantAuthorization{

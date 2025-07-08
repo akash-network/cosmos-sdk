@@ -24,6 +24,7 @@ import (
 
 	"cosmossdk.io/tools/rosetta"
 	crgserver "cosmossdk.io/tools/rosetta/lib/server"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -525,7 +526,7 @@ func startAPIserver(config serverconfig.Config, genDocProvider node.GenesisDocPr
 			return nil, err
 		}
 
-		clientCtx := clientCtx.WithHomeDir(home).WithChainID(genDoc.ChainID)
+		clientCtx := clientCtx.WithHomeDir(home).WithChainID(genDoc.GenesisDoc.ChainID)
 
 		if config.GRPC.Enable {
 			_, _, err := net.SplitHostPort(config.GRPC.Address)

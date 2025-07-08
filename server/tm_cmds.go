@@ -10,7 +10,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	pvm "github.com/cometbft/cometbft/privval"
 	cmtstore "github.com/cometbft/cometbft/proto/tendermint/store"
-	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/statesync"
 	"github.com/cometbft/cometbft/store"
 	tversion "github.com/cometbft/cometbft/version"
@@ -160,11 +159,8 @@ func BootstrapStateCmd(appCreator types.AppCreator) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			stateStore := sm.NewStore(stateDB, sm.StoreOptions{
-				DiscardABCIResponses: cfg.Storage.DiscardABCIResponses,
-			})
 
-			genState, _, err := node.LoadStateFromDBOrGenesisDocProvider(stateDB, node.DefaultGenesisDocProviderFunc(cfg))
+			genState, stateStore, _, err := node.LoadStateFromDBOrGenesisDocProvider(stateDB, node.DefaultGenesisDocProviderFunc(cfg), "")
 			if err != nil {
 				return err
 			}

@@ -1,6 +1,6 @@
 module cosmossdk.io/simapp
 
-go 1.21
+go 1.24
 
 toolchain go1.24.4
 
@@ -187,6 +187,8 @@ require (
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+
+	github.com/cometbft/cometbft => github.com/akash-network/cometbft v0.37.6-akash.3
 	// Simapp always use the latest version of the cosmos-sdk
 	github.com/cosmos/cosmos-sdk => ../.
 	// Fix upstream GHSA-h395-qcrw-5vmq and GHSA-3vp4-m3rf-835h vulnerabilities.

@@ -1,6 +1,6 @@
 module github.com/cosmos/cosmos-sdk/tests
 
-go 1.21
+go 1.24
 
 toolchain go1.24.4
 
@@ -190,6 +190,7 @@ replace (
 	// We always want to test against the latest version of the simapp.
 	cosmossdk.io/simapp => ../simapp
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+	github.com/cometbft/cometbft => github.com/akash-network/cometbft v0.37.6-akash.3
 	// We always want to test against the latest version of the SDK.
 	github.com/cosmos/cosmos-sdk => ../.
 	// Fix upstream GHSA-h395-qcrw-5vmq and GHSA-3vp4-m3rf-835h vulnerabilities.
