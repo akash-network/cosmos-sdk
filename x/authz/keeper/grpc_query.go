@@ -109,7 +109,7 @@ func (k Keeper) GranterGrants(c context.Context, req *authz.QueryGranterGrantsRe
 			return nil, err
 		}
 
-		any, err := codectypes.NewAnyWithValue(auth1)
+		authzVal, err := codectypes.NewAnyWithValue(auth1)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "%s", err.Error())
 		}
@@ -118,7 +118,7 @@ func (k Keeper) GranterGrants(c context.Context, req *authz.QueryGranterGrantsRe
 		return &authz.GrantAuthorization{
 			Granter:       granter.String(),
 			Grantee:       grantee.String(),
-			Authorization: any,
+			Authorization: authzVal,
 			Expiration:    auth.Expiration,
 		}, nil
 	}, func() *authz.Grant {
@@ -189,13 +189,11 @@ func (k Keeper) GranteeGrants(c context.Context, req *authz.QueryGranteeGrantsRe
 		}, func() *authz.Grant {
 			return &authz.Grant{}
 		})
-
 		if err != nil {
 			return nil, err
 		}
 
 		grants = append(grants, authorizations...)
-
 		req.Pagination.Limit -= uint64(len(authorizations))
 		if req.Pagination.Limit == 0 {
 			break

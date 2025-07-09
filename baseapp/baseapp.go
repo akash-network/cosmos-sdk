@@ -46,7 +46,7 @@ const (
 var _ abci.Application = (*BaseApp)(nil)
 
 // BaseApp reflects the ABCI application implementation.
-type BaseApp struct { //nolint: maligned
+type BaseApp struct {
 	// initialized on creation
 	logger            log.Logger
 	name              string               // application name from abci.Info
@@ -731,12 +731,13 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte) (gInfo sdk.GasInfo, re
 		anteEvents = events.ToABCIEvents()
 	}
 
-	if mode == runTxModeCheck {
+	switch mode {
+	case runTxModeCheck:
 		err = app.mempool.Insert(ctx, tx)
 		if err != nil {
 			return gInfo, nil, anteEvents, priority, err
 		}
-	} else if mode == runTxModeDeliver {
+	case runTxModeDeliver:
 		err = app.mempool.Remove(tx)
 		if err != nil && !errors.Is(err, mempool.ErrTxNotFound) {
 			return gInfo, nil, anteEvents, priority,

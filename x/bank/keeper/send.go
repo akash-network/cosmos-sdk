@@ -104,7 +104,7 @@ func (k BaseSendKeeper) GetParams(ctx sdk.Context) (params types.Params) {
 //
 // Note: params.SendEnabled is deprecated but it should be here regardless.
 //
-//nolint:staticcheck
+
 func (k BaseSendKeeper) SetParams(ctx sdk.Context, params types.Params) error {
 	// Normally SendEnabled is deprecated but we still support it for backwards
 	// compatibility. Using params.Validate() would fail due to the SendEnabled

@@ -292,7 +292,7 @@ $ %[1]s query gov votes 1 --page=2 --limit=100
 			}
 
 			propStatus := proposalRes.GetProposal().Status
-			if !(propStatus == v1.StatusVotingPeriod || propStatus == v1.StatusDepositPeriod) {
+			if propStatus != v1.StatusVotingPeriod && propStatus != v1.StatusDepositPeriod {
 				page, _ := cmd.Flags().GetInt(flags.FlagPage)
 				limit, _ := cmd.Flags().GetInt(flags.FlagLimit)
 
@@ -510,7 +510,7 @@ $ %s query gov tally 1
 
 // GetCmdQueryParams implements the query params command.
 //
-//nolint:staticcheck // this function contains deprecated commands that we need.
+// this function contains deprecated commands that we need.
 func GetCmdQueryParams() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "params",
@@ -591,7 +591,7 @@ $ %s query gov param deposit
 			}
 
 			var out fmt.Stringer
-			//nolint:staticcheck // this switch statement contains deprecated commands that we need.
+			// this switch statement contains deprecated commands that we need.
 			switch args[0] {
 			case "voting":
 				out = res.GetVotingParams()

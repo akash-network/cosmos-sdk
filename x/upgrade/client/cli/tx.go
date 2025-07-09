@@ -59,7 +59,7 @@ func NewCmdSubmitLegacyUpgradeProposal() *cobra.Command {
 				return err
 			}
 			if !noValidate {
-				prop := content.(*types.SoftwareUpgradeProposal) //nolint:staticcheck // we are intentionally using a deprecated proposal type.
+				prop := content.(*types.SoftwareUpgradeProposal) // we are intentionally using a deprecated proposal type.
 				var daemonName string
 				if daemonName, err = cmd.Flags().GetString(FlagDaemonName); err != nil {
 					return err
@@ -94,7 +94,7 @@ func NewCmdSubmitLegacyUpgradeProposal() *cobra.Command {
 	}
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck // we are intentionally using a deprecated flag here.
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") // we are intentionally using a deprecated flag here.
 	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
 	cmd.Flags().Int64(FlagUpgradeHeight, 0, "The height at which the upgrade must happen")
 	cmd.Flags().String(FlagUpgradeInfo, "", "Info for the upgrade plan such as new version download urls, etc.")
@@ -134,7 +134,7 @@ func NewCmdSubmitLegacyCancelUpgradeProposal() *cobra.Command {
 				return err
 			}
 
-			description, err := cmd.Flags().GetString(cli.FlagDescription) //nolint:staticcheck // we are intentionally using a deprecated flag here.
+			description, err := cmd.Flags().GetString(cli.FlagDescription) // we are intentionally using a deprecated flag here.
 			if err != nil {
 				return err
 			}
@@ -151,10 +151,10 @@ func NewCmdSubmitLegacyCancelUpgradeProposal() *cobra.Command {
 	}
 
 	cmd.Flags().String(cli.FlagTitle, "", "title of proposal")
-	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") //nolint:staticcheck // we are intentionally using a deprecated flag here.
+	cmd.Flags().String(cli.FlagDescription, "", "description of proposal") // we are intentionally using a deprecated flag here.
 	cmd.Flags().String(cli.FlagDeposit, "", "deposit of proposal")
 	cmd.MarkFlagRequired(cli.FlagTitle)
-	cmd.MarkFlagRequired(cli.FlagDescription) //nolint:staticcheck // we are intentionally using a deprecated flag here.
+	cmd.MarkFlagRequired(cli.FlagDescription) // we are intentionally using a deprecated flag here.
 
 	return cmd
 }
