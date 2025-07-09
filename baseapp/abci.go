@@ -69,7 +69,7 @@ func (app *BaseApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitC
 	}
 
 	if app.initChainer == nil {
-		return
+		return abci.ResponseInitChain{}
 	}
 
 	// add block gas meter for any genesis transactions (allow infinite gas)
@@ -360,13 +360,11 @@ func (app *BaseApp) ProcessProposal(req abci.RequestProcessProposal) (resp abci.
 func (app *BaseApp) CheckTx(req abci.RequestCheckTx) abci.ResponseCheckTx {
 	var mode runTxMode
 
-	switch {
-	case req.Type == abci.CheckTxType_New:
+	switch req.Type {
+	case abci.CheckTxType_New:
 		mode = runTxModeCheck
-
-	case req.Type == abci.CheckTxType_Recheck:
+	case abci.CheckTxType_Recheck:
 		mode = runTxModeReCheck
-
 	default:
 		panic(fmt.Sprintf("unknown RequestCheckTx type: %s", req.Type))
 	}

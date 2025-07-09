@@ -10,7 +10,7 @@ import (
 
 	secp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cometbft/cometbft/crypto"
-	"golang.org/x/crypto/ripemd160" //nolint: staticcheck
+	"golang.org/x/crypto/ripemd160" //nolint: gosec
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -138,7 +138,7 @@ func GenPrivKeyFromSecret(secret []byte) *PrivKey {
 	return &PrivKey{Key: privKey32}
 }
 
-//-------------------------------------
+// -------------------------------------
 
 var (
 	_ cryptotypes.PubKey   = &PubKey{}
@@ -156,8 +156,8 @@ func (pubKey *PubKey) Address() crypto.Address {
 	}
 
 	sha := sha256.Sum256(pubKey.Key)
-	hasherRIPEMD160 := ripemd160.New()
-	hasherRIPEMD160.Write(sha[:]) // does not error
+	hasherRIPEMD160 := ripemd160.New() //nolint: gosec
+	hasherRIPEMD160.Write(sha[:])      // does not error
 	return crypto.Address(hasherRIPEMD160.Sum(nil))
 }
 

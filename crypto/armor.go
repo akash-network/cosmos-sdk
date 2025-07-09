@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/cometbft/cometbft/crypto"
-	"golang.org/x/crypto/openpgp/armor" //nolint:staticcheck
+	"golang.org/x/crypto/openpgp/armor"
 
 	"github.com/cosmos/cosmos-sdk/codec/legacy"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/bcrypt"

@@ -118,7 +118,7 @@ func (suite *SimTestSuite) TestSimulateMsgSend() {
 }
 
 // TestSimulateMsgSend tests the normal scenario of a valid message of type TypeMsgMultiSend.
-// Abonormal scenarios, where the message is created by an errors, are not tested here.
+// Abnormal scenarios, where the message is created by an errors, are not tested here.
 func (suite *SimTestSuite) TestSimulateMsgMultiSend() {
 	// setup 3 accounts
 	s := rand.NewSource(1)

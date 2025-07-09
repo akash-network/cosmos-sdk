@@ -215,7 +215,7 @@ func ProvideModule(in GovInputs) GovOutputs {
 }
 
 func ProvideKeyTable() paramtypes.KeyTable {
-	return v1.ParamKeyTable() //nolint:staticcheck
+	return v1.ParamKeyTable()
 }
 
 func InvokeAddRoutes(keeper *keeper.Keeper, routes []v1beta1.HandlerRoute) {
@@ -330,7 +330,7 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // ProposalContents returns all the gov content functions used to
 // simulate governance proposals.
-func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent { //nolint:staticcheck
+func (AppModule) ProposalContents(simState module.SimulationState) []simtypes.WeightedProposalContent {
 	return simulation.ProposalContents()
 }
 

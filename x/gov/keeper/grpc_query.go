@@ -162,7 +162,6 @@ func (q Keeper) Params(c context.Context, req *v1.QueryParamsRequest) (*v1.Query
 
 	response := &v1.QueryParamsResponse{}
 
-	//nolint:staticcheck
 	switch req.ParamsType {
 	case v1.ParamDeposit:
 		depositParams := v1.NewDepositParams(params.MinDeposit, params.MaxDepositPeriod)
@@ -266,11 +265,15 @@ func (q Keeper) TallyResult(c context.Context, req *v1.QueryTallyResultRequest) 
 
 	var tallyResult v1.TallyResult
 
-	switch {
-	case proposal.Status == v1.StatusDepositPeriod:
+	switch proposal.Status {
+	case v1.StatusDepositPeriod:
 		tallyResult = v1.EmptyTallyResult()
 
-	case proposal.Status == v1.StatusPassed || proposal.Status == v1.StatusRejected || proposal.Status == v1.StatusFailed:
+	case v1.StatusPassed:
+		fallthrough
+	case v1.StatusRejected:
+		fallthrough
+	case v1.StatusFailed:
 		tallyResult = *proposal.FinalTallyResult
 
 	default:
@@ -373,7 +376,6 @@ func (q legacyQueryServer) Votes(c context.Context, req *v1beta1.QueryVotesReque
 	}, nil
 }
 
-//nolint:staticcheck
 func (q legacyQueryServer) Params(c context.Context, req *v1beta1.QueryParamsRequest) (*v1beta1.QueryParamsResponse, error) {
 	resp, err := q.keeper.Params(c, &v1.QueryParamsRequest{
 		ParamsType: req.ParamsType,

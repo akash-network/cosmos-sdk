@@ -14,6 +14,8 @@ import (
 	tmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/pkg/errors"
 
+	"github.com/cosmos/go-bip39"
+
 	"github.com/cosmos/cosmos-sdk/client/input"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/crypto"
@@ -23,7 +25,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/go-bip39"
 )
 
 // Backend options for Keyring
@@ -634,7 +635,7 @@ func SignWithLedger(k *Record, msg []byte) (sig []byte, pub types.PubKey, err er
 
 	priv, err := ledger.NewPrivKeySecp256k1Unsafe(*path)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
 	sig, err = priv.Sign(msg)
@@ -782,7 +783,7 @@ func newRealPrompt(dir string, buf io.Reader) func(string) (string, error) {
 				continue
 			}
 
-			if err := os.WriteFile(dir+"/keyhash", passwordHash, 0o555); err != nil {
+			if err := os.WriteFile(dir+"/keyhash", passwordHash, 0o555); err != nil { //nolint:gosec
 				return "", err
 			}
 

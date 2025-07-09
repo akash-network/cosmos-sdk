@@ -1,10 +1,11 @@
 package cli
 
 import (
+	"github.com/spf13/pflag"
+
 	"github.com/cosmos/cosmos-sdk/x/gov/client/cli"
 	gov "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/spf13/pflag"
 )
 
 func parseArgsToContent(fs *pflag.FlagSet, name string) (gov.Content, error) {
@@ -13,7 +14,7 @@ func parseArgsToContent(fs *pflag.FlagSet, name string) (gov.Content, error) {
 		return nil, err
 	}
 
-	description, err := fs.GetString(cli.FlagDescription) //nolint:staticcheck // we are intentionally using a deprecated flag here.
+	description, err := fs.GetString(cli.FlagDescription) // we are intentionally using a deprecated flag here.
 	if err != nil {
 		return nil, err
 	}

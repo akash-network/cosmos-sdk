@@ -17,7 +17,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/version"
 
-	legacybech32 "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32" //nolint:staticcheck // we do old keys, they're keys after all.
+	legacybech32 "github.com/cosmos/cosmos-sdk/types/bech32/legacybech32" // we do old keys, they're keys after all.
 )
 
 var (
@@ -106,17 +106,17 @@ func getPubKeyFromRawString(pkstr string, keytype string) (cryptotypes.PubKey, e
 		}
 	}
 
-	pk, err := legacybech32.UnmarshalPubKey(legacybech32.AccPK, pkstr) //nolint:staticcheck // we do old keys, they're keys after all.
+	pk, err := legacybech32.UnmarshalPubKey(legacybech32.AccPK, pkstr) // we do old keys, they're keys after all.
 	if err == nil {
 		return pk, nil
 	}
 
-	pk, err = legacybech32.UnmarshalPubKey(legacybech32.ValPK, pkstr) //nolint:staticcheck // we do old keys, they're keys after all.
+	pk, err = legacybech32.UnmarshalPubKey(legacybech32.ValPK, pkstr) // we do old keys, they're keys after all.
 	if err == nil {
 		return pk, nil
 	}
 
-	pk, err = legacybech32.UnmarshalPubKey(legacybech32.ConsPK, pkstr) //nolint:staticcheck // we do old keys, they're keys after all.
+	pk, err = legacybech32.UnmarshalPubKey(legacybech32.ConsPK, pkstr) // we do old keys, they're keys after all.
 	if err == nil {
 		return pk, nil
 	}
@@ -154,7 +154,7 @@ $ %s debug pubkey-raw cosmos1e0jnq2sun3dzjh8p2xq95kk0expwmd7shwjpfg
 			var consensusPub string
 			edPK, ok := pk.(*ed25519.PubKey)
 			if ok && pubkeyType == ed {
-				consensusPub, err = legacybech32.MarshalPubKey(legacybech32.ConsPK, edPK) //nolint:staticcheck // we do old keys, they're keys after all.
+				consensusPub, err = legacybech32.MarshalPubKey(legacybech32.ConsPK, edPK) // we do old keys, they're keys after all.
 				if err != nil {
 					return err
 				}
@@ -167,11 +167,11 @@ $ %s debug pubkey-raw cosmos1e0jnq2sun3dzjh8p2xq95kk0expwmd7shwjpfg
 			if err != nil {
 				return err
 			}
-			accPub, err := legacybech32.MarshalPubKey(legacybech32.AccPK, pk) //nolint:staticcheck // we do old keys, they're keys after all.
+			accPub, err := legacybech32.MarshalPubKey(legacybech32.AccPK, pk) // we do old keys, they're keys after all.
 			if err != nil {
 				return err
 			}
-			valPub, err := legacybech32.MarshalPubKey(legacybech32.ValPK, pk) //nolint:staticcheck // we do old keys, they're keys after all.
+			valPub, err := legacybech32.MarshalPubKey(legacybech32.ValPK, pk) // we do old keys, they're keys after all.
 			if err != nil {
 				return err
 			}

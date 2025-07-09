@@ -25,6 +25,15 @@ linters:
       require-explanation: false
       require-specific: false
       allow-unused: false
+    depguard:
+      rules:
+        main:
+          list-mode: lax
+          allow:
+            - $gostd
+            - github.com/cosmos-sdk
+            - github.com/cometbft
+            - google.golang.org
   exclusions:
     generated: lax
     presets:
@@ -37,6 +46,9 @@ linters:
           - gosec
         text: Use of weak random number generator
       - linters:
+          - gosec
+        text: 'G115:'
+      - linters:
           - staticcheck
         text: 'ST1003:'
       - linters:
@@ -44,8 +56,12 @@ linters:
         text: 'ST1016:'
       - linters:
           - staticcheck
-        path: migrations
+        path: .
         text: 'SA1019:'
+      - linters:
+          - staticcheck
+        path: .
+        text: 'QF1008:'
     paths:
       - third_party$
       - builtin$
