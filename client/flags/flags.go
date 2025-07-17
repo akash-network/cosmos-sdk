@@ -78,6 +78,14 @@ const (
 	// Tendermint logging flags
 	FlagLogLevel  = "log_level"
 	FlagLogFormat = "log_format"
+
+	// testnet keys
+	KeyIsTestnet             = "is-testnet"
+	KeyNewChainID            = "new-chain-ID"
+	KeyNewOpAddr             = "new-operator-addr"
+	KeyNewValAddr            = "new-validator-addr"
+	KeyUserPubKey            = "user-pub-key"
+	KeyTriggerTestnetUpgrade = "trigger-testnet-upgrade"
 )
 
 // LineBreak can be included in a command list to provide a blank line

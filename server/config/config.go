@@ -15,8 +15,11 @@ import (
 const (
 	defaultMinGasPrices = ""
 
+	// DefaultAPIAddress defines the default address to bind the API server to.
+	DefaultAPIAddress = "tcp://localhost:1317"
+
 	// DefaultGRPCAddress defines the default address to bind the gRPC server to.
-	DefaultGRPCAddress = "0.0.0.0:9090"
+	DefaultGRPCAddress = "localhost:9090"
 
 	// DefaultGRPCWebAddress defines the default address to bind the gRPC-web server to.
 	DefaultGRPCWebAddress = "0.0.0.0:9091"

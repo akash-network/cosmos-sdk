@@ -380,7 +380,7 @@ func openDB(rootDir string) (dbm.DB, error) {
 	return sdk.NewLevelDB("application", dataDir)
 }
 
-func openTraceWriter(traceWriterFile string) (w io.Writer, err error) {
+func openTraceWriter(traceWriterFile string) (w io.WriteCloser, err error) {
 	if traceWriterFile == "" {
 		return
 	}

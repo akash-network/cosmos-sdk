@@ -46,6 +46,7 @@ require (
 	github.com/tidwall/btree v1.5.0
 	golang.org/x/crypto v0.5.0
 	golang.org/x/exp v0.0.0-20221019170559-20944726eadf
+	golang.org/x/sync v0.1.0
 	google.golang.org/genproto v0.0.0-20230125152338-dcaf20b6aeaa
 	google.golang.org/grpc v1.52.3
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
@@ -156,7 +157,7 @@ replace (
 	github.com/jhump/protoreflect => github.com/jhump/protoreflect v1.9.0
 
 	// use cometbft
-	github.com/tendermint/tendermint => github.com/akash-network/cometbft v0.34.27-akash.2
+	github.com/tendermint/tendermint => github.com/akash-network/cometbft v0.34.27-akash.4
 
 	// latest grpc doesn't work with with our modified proto compiler, so we need to enforce
 	// the following version across all dependencies.
