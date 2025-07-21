@@ -194,7 +194,7 @@ is performed. Note, when enabled, gRPC will also be automatically enabled.
 			}
 
 			// amino is needed here for backwards compatibility of REST routes
-			err = startInProcess(serverCtx, clientCtx, app)
+			err = StartInProcess(serverCtx, clientCtx, app)
 			errCode, ok := err.(ErrorCode)
 			if !ok {
 				return err
@@ -251,7 +251,7 @@ func start(svrCtx *Context, clientCtx client.Context, appCreator types.AppCreato
 		return startStandAlone(svrCtx, app)
 	}
 
-	return startInProcess(svrCtx, clientCtx, app)
+	return StartInProcess(svrCtx, clientCtx, app)
 }
 
 func getAndValidateConfig(svrCtx *Context) (serverconfig.Config, error) {
@@ -316,7 +316,7 @@ func startStandAlone(ctx *Context, app types.Application) error {
 	return WaitForQuitSignals()
 }
 
-func startInProcess(ctx *Context, clientCtx client.Context, app types.Application) error {
+func StartInProcess(ctx *Context, clientCtx client.Context, app types.Application) error {
 	cfg := ctx.Config
 	home := cfg.RootDir
 	var cpuProfileCleanup func()
