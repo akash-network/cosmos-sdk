@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/abci/server"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
@@ -126,6 +127,8 @@ type StartCmdOptions struct {
 	AddFlags func(cmd *cobra.Command)
 	// StartCommandHanlder can be used to customize the start command handler
 	StartCommandHandler func(svrCtx *Context, clientCtx client.Context, appCreator types.AppCreator, inProcessConsensus bool, opts StartCmdOptions) error
+	// GetCtx get cancelable context and error group from upper layer if set
+	GetCtx func(svrCtx *Context, block bool) (*errgroup.Group, context.Context)
 }
 
 // StartCmd runs the service passed in, either stand-alone or in-process with
@@ -236,7 +239,7 @@ func start(svrCtx *Context, clientCtx client.Context, appCreator types.AppCreato
 	if !withCmt {
 		return startStandAlone(svrCtx, svrCfg, clientCtx, app, metrics, opts)
 	}
-	return startInProcess(svrCtx, svrCfg, clientCtx, app, metrics, opts)
+	return StartInProcess(svrCtx, svrCfg, clientCtx, app, metrics, opts)
 }
 
 func startStandAlone(svrCtx *Context, svrCfg serverconfig.Config, clientCtx client.Context, app types.Application, metrics *telemetry.Metrics, opts StartCmdOptions) error {
@@ -305,7 +308,7 @@ func startStandAlone(svrCtx *Context, svrCfg serverconfig.Config, clientCtx clie
 	return g.Wait()
 }
 
-func startInProcess(svrCtx *Context, svrCfg serverconfig.Config, clientCtx client.Context, app types.Application,
+func StartInProcess(svrCtx *Context, svrCfg serverconfig.Config, clientCtx client.Context, app types.Application,
 	metrics *telemetry.Metrics, opts StartCmdOptions,
 ) error {
 	cmtCfg := svrCtx.Config
@@ -427,7 +430,8 @@ func getGenDocProvider(cfg *cmtcfg.Config) func() (node.ChecksummedGenesisDoc, e
 			return node.ChecksummedGenesisDoc{}, err
 		}
 		return node.ChecksummedGenesisDoc{
-			GenesisDoc: genDoc,
+			GenesisDoc:     genDoc,
+			Sha256Checksum: appGenesis.Sha256Checksum,
 		}, nil
 	}
 }
@@ -803,6 +807,21 @@ func testnetify(ctx *Context, testnetAppCreator types.AppCreator, db dbm.DB, tra
 	}
 	validatorAddress := userPubKey.Address()
 
+	jsonBlob, err := os.ReadFile(config.GenesisFile())
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
+	}
+
+	updatedChecksum := tmhash.Sum(jsonBlob)
+	genDoc, err := cmttypes.GenesisDocFromJSON(jsonBlob)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = stateDB.SetSync(node.GenesisDocHashKey, updatedChecksum); err != nil {
+		return nil, node.ErrSaveGenesisDocHash{Err: err}
+	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
@@ -912,7 +931,7 @@ func testnetify(ctx *Context, testnetAppCreator types.AppCreator, db dbm.DB, tra
 		return nil, err
 	}
 
-	// Create ValidatorSet struct containing just our valdiator.
+	// Create ValidatorSet struct containing just our validator.
 	newVal := &cmttypes.Validator{
 		Address:     validatorAddress,
 		PubKey:      userPubKey,
@@ -948,7 +967,7 @@ func testnetify(ctx *Context, testnetAppCreator types.AppCreator, db dbm.DB, tra
 		return nil, err
 	}
 
-	// Modfiy Validators stateDB entry.
+	// Modify Validators stateDB entry.
 	err = stateDB.Set(fmt.Appendf(nil, "validatorsKey:%v", blockStore.Height()), buf)
 	if err != nil {
 		return nil, err
