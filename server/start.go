@@ -113,6 +113,8 @@ const (
 	KeyTriggerTestnetUpgrade = "trigger-testnet-upgrade"
 )
 
+type GenCtx func(svrCtx *Context, block bool) (*errgroup.Group, context.Context)
+
 // StartCmdOptions defines options that can be customized in `StartCmdWithOptions`,
 type StartCmdOptions struct {
 	// DBOpener can be used to customize db opening, for example customize db options or support different db backends,
@@ -128,7 +130,7 @@ type StartCmdOptions struct {
 	// StartCommandHanlder can be used to customize the start command handler
 	StartCommandHandler func(svrCtx *Context, clientCtx client.Context, appCreator types.AppCreator, inProcessConsensus bool, opts StartCmdOptions) error
 	// GetCtx get cancelable context and error group from upper layer if set
-	GetCtx func(svrCtx *Context, block bool) (*errgroup.Group, context.Context)
+	GetCtx GenCtx
 }
 
 // StartCmd runs the service passed in, either stand-alone or in-process with
@@ -254,7 +256,13 @@ func startStandAlone(svrCtx *Context, svrCfg serverconfig.Config, clientCtx clie
 
 	svr.SetLogger(servercmtlog.CometLoggerWrapper{Logger: svrCtx.Logger.With("module", "abci-server")})
 
-	g, ctx := getCtx(svrCtx, false)
+	gCtx := getCtx
+
+	if opts.GetCtx != nil {
+		gCtx = opts.GetCtx
+	}
+
+	g, ctx := gCtx(svrCtx, true)
 
 	// Add the tx service to the gRPC router. We only need to register this
 	// service if API or gRPC is enabled, and avoid doing so in the general
@@ -314,7 +322,13 @@ func StartInProcess(svrCtx *Context, svrCfg serverconfig.Config, clientCtx clien
 	cmtCfg := svrCtx.Config
 	gRPCOnly := svrCtx.Viper.GetBool(flagGRPCOnly)
 
-	g, ctx := getCtx(svrCtx, true)
+	gCtx := getCtx
+
+	if opts.GetCtx != nil {
+		gCtx = opts.GetCtx
+	}
+
+	g, ctx := gCtx(svrCtx, true)
 
 	if gRPCOnly {
 		// TODO: Generalize logic so that gRPC only is really in startStandAlone
