@@ -15,6 +15,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 
 	"github.com/cosmos/cosmos-sdk/version"
 )
@@ -26,14 +27,15 @@ const (
 
 // AppGenesis defines the app's genesis.
 type AppGenesis struct {
-	AppName       string            `json:"app_name"`
-	AppVersion    string            `json:"app_version"`
-	GenesisTime   time.Time         `json:"genesis_time"`
-	ChainID       string            `json:"chain_id"`
-	InitialHeight int64             `json:"initial_height"`
-	AppHash       []byte            `json:"app_hash"`
-	AppState      json.RawMessage   `json:"app_state,omitempty"`
-	Consensus     *ConsensusGenesis `json:"consensus,omitempty"`
+	AppName        string            `json:"app_name"`
+	AppVersion     string            `json:"app_version"`
+	GenesisTime    time.Time         `json:"genesis_time"`
+	ChainID        string            `json:"chain_id"`
+	InitialHeight  int64             `json:"initial_height"`
+	AppHash        []byte            `json:"app_hash"`
+	AppState       json.RawMessage   `json:"app_state,omitempty"`
+	Consensus      *ConsensusGenesis `json:"consensus,omitempty"`
+	Sha256Checksum []byte            `json:"-"`
 }
 
 // NewAppGenesisWithVersion returns a new AppGenesis with the app name and app version already.
@@ -80,7 +82,7 @@ func (ag *AppGenesis) ValidateAndComplete() error {
 
 // SaveAs is a utility method for saving AppGenesis as a JSON file.
 func (ag *AppGenesis) SaveAs(file string) error {
-	appGenesisBytes, err := json.MarshalIndent(ag, "", "  ")
+	appGenesisBytes, err := cmtjson.MarshalIndent(ag, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -94,6 +96,8 @@ func AppGenesisFromReader(reader io.Reader) (*AppGenesis, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	incomingChecksum := tmhash.Sum(jsonBlob)
 
 	var appGenesis AppGenesis
 	if err := json.Unmarshal(jsonBlob, &appGenesis); err != nil {
@@ -117,6 +121,8 @@ func AppGenesisFromReader(reader io.Reader) (*AppGenesis, error) {
 			},
 		}
 	}
+
+	appGenesis.Sha256Checksum = incomingChecksum
 
 	return &appGenesis, nil
 }
