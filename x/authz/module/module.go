@@ -56,7 +56,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	authz.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 	authz.RegisterMsgServer(cfg.MsgServer(), am.keeper)
 	m := keeper.NewMigrator(am.keeper)
-	err := cfg.RegisterMigration(authz.ModuleName, 1, m.Migrate1to2)
+	err := cfg.RegisterMigration(authz.ModuleName, 2, m.Migrate2to3)
 	if err != nil {
 		panic(fmt.Sprintf("failed to migrate x/%s from version 1 to 2: %v", authz.ModuleName, err))
 	}
@@ -143,7 +143,7 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return 2 }
+func (AppModule) ConsensusVersion() uint64 { return 3 }
 
 // BeginBlock returns the begin blocker for the authz module.
 func (am AppModule) BeginBlock(ctx context.Context) error {
