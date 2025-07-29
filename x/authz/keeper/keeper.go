@@ -337,7 +337,7 @@ func (k Keeper) IterateGrants(ctx context.Context,
 	defer iter.Close()
 	for ; iter.Valid(); iter.Next() {
 		var grant authz.Grant
-		granterAddr, granteeAddr, _ := parseGrantStoreKey(iter.Key())
+		granterAddr, granteeAddr, _ := ParseGrantStoreKey(iter.Key())
 		k.cdc.MustUnmarshal(iter.Value(), &grant)
 		if handler(granterAddr, granteeAddr, grant) {
 			break
@@ -403,7 +403,7 @@ func (k Keeper) removeFromGrantQueue(ctx context.Context, grantKey []byte, grant
 		return err
 	}
 
-	_, _, msgType := parseGrantStoreKey(grantKey)
+	_, _, msgType := ParseGrantStoreKey(grantKey)
 	queueItems := queueItem.MsgTypeUrls
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -468,7 +468,7 @@ func (k Keeper) DequeueAndDeleteExpiredGrants(ctx context.Context) error {
 func IncGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddress) error {
 	key := granteeStoreKey(grantee, granter)
 
-	count := sdkmath.NewInt(0)
+	count := sdkmath.NewInt(1)
 
 	if exists, _ := store.Has(key); exists {
 		val, err := store.Get(key)
