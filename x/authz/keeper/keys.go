@@ -53,8 +53,8 @@ func granteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
 	return key
 }
 
-// parseGrantStoreKey - split granter, grantee address and msg type from the authorization key
-func parseGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAddress, msgType string) {
+// ParseGrantStoreKey - split granter, grantee address and msg type from the authorization key
+func ParseGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAddress, msgType string) {
 	// key is of format:
 	// 0x01<granterAddressLen (1 Byte)><granterAddress_Bytes><granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgType_Bytes>
 
