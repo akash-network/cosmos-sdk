@@ -15,6 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/cosmos/cosmos-sdk/x/authz/keeper/keys"
 	v2 "github.com/cosmos/cosmos-sdk/x/authz/migrations/v2"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -106,21 +107,21 @@ func TestMigration(t *testing.T) {
 
 	for _, g := range grants {
 		grant := g.authorization()
-		require.NoError(t, store.Set(v2.GrantStoreKey(g.grantee, g.granter, g.msgType), cdc.MustMarshal(&grant)))
+		require.NoError(t, store.Set(keys.GrantStoreKey(g.grantee, g.granter, g.msgType), cdc.MustMarshal(&grant)))
 	}
 
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(1 * time.Hour))
 	require.NoError(t, v2.MigrateStore(ctx, storeService, cdc))
 
-	bz, err := store.Get(v2.GrantStoreKey(grantee1, granter2, genericMsgType))
+	bz, err := store.Get(keys.GrantStoreKey(grantee1, granter2, genericMsgType))
 	require.NoError(t, err)
 	require.NotNil(t, bz)
 
-	bz, err = store.Get(v2.GrantStoreKey(grantee1, granter1, sendMsgType))
+	bz, err = store.Get(keys.GrantStoreKey(grantee1, granter1, sendMsgType))
 	require.NoError(t, err)
 	require.NotNil(t, bz)
 
-	bz, err = store.Get(v2.GrantStoreKey(grantee2, granter2, genericMsgType))
+	bz, err = store.Get(keys.GrantStoreKey(grantee2, granter2, genericMsgType))
 	require.NoError(t, err)
 	require.Nil(t, bz)
 }
