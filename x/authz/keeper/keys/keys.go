@@ -1,13 +1,19 @@
-package keeper
+package keys
 
 import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
+	"math/big"
 	"time"
+
+	corestoretypes "cosmossdk.io/core/store"
+	sdkmath "cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/internal/conv"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/cosmos/cosmos-sdk/types/kv"
-	"github.com/cosmos/cosmos-sdk/x/authz"
 )
 
 // Keys for store prefixes
@@ -15,23 +21,22 @@ import (
 //
 // - 0x01<grant_Bytes>: Grant
 // - 0x02<grant_expiration_Bytes>: GrantQueueItem
-// - 0x03<grant_Bytes>: Grant by grantee
+// - 0x03<grantee_Bytes>: Grant by grantee
+// - 0x04<grantee msg type>: grant by grantee and msgTypeUrl
 var (
 	GrantKey         = []byte{0x01} // prefix for each key
 	GrantQueuePrefix = []byte{0x02}
-	GranteeKey       = []byte{0x03} // prefix for each key
+	GranteeKey       = []byte{0x03} // reverse prefix to get grants by grantee
+	GranteeMsgKey    = []byte{0x04} // reverse prefix to get grantee's grants by msgTypeUrl
 )
 
 var lenTime = len(sdk.FormatTimeBytes(time.Now()))
 
-// StoreKey is the store key string for authz
-const StoreKey = authz.ModuleName
-
-// grantStoreKey - return authorization store key
+// GrantStoreKey - return authorization store key
 // Items are stored with the following key: values
 //
 // - 0x01<granterAddressLen (1 Byte)><granterAddress_Bytes><granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgType_Bytes>: Grant
-func grantStoreKey(grantee, granter sdk.AccAddress, msgType string) []byte {
+func GrantStoreKey(grantee, granter sdk.AccAddress, msgType string) []byte {
 	m := conv.UnsafeStrToBytes(msgType)
 	granter = address.MustLengthPrefix(granter)
 	grantee = address.MustLengthPrefix(grantee)
@@ -40,15 +45,38 @@ func grantStoreKey(grantee, granter sdk.AccAddress, msgType string) []byte {
 	return key
 }
 
-// granteeStoreKey - return authorization store key
+// GranteeStoreKey - return authorization store key
 // Items are stored with the following key: values
 //
 // - 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-func granteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
+func GranteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
 	grantee = address.MustLengthPrefix(grantee)
 	granter = address.MustLengthPrefix(granter)
 
 	key := sdk.AppendLengthPrefixedBytes(GranteeKey, grantee, granter)
+
+	return key
+}
+
+// GranteeMsgStoreKey - return authorization store key
+// Items are stored with the following key: values
+//
+// - 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgTypeAddressLen (1 Byte)><msgType_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+func GranteeMsgStoreKey(grantee sdk.AccAddress, msgType string, granter sdk.AccAddress) []byte {
+	args := make([][]byte, 0, 4)
+
+	args = append(args, GranteeMsgKey)
+	args = append(args, address.MustLengthPrefix(grantee))
+
+	if msgType != "" {
+		args = append(args, conv.UnsafeStrToBytes(msgType))
+
+		if granter != nil {
+			args = append(args, address.MustLengthPrefix(granter))
+		}
+	}
+
+	key := sdk.AppendLengthPrefixedBytes(args...)
 
 	return key
 }
@@ -68,8 +96,8 @@ func ParseGrantStoreKey(key []byte) (granterAddr, granteeAddr sdk.AccAddress, ms
 	return granterAddr, granteeAddr, conv.UnsafeBytesToStr(key[(granteeAddrEndIndex + 1):])
 }
 
-// parseGrantQueueKey split expiration time, granter and grantee from the grant queue key
-func parseGrantQueueKey(key []byte) (time.Time, sdk.AccAddress, sdk.AccAddress, error) {
+// ParseGrantQueueKey split expiration time, granter and grantee from the grant queue key
+func ParseGrantQueueKey(key []byte) (time.Time, sdk.AccAddress, sdk.AccAddress, error) {
 	// key is of format:
 	// 0x02<grant_expiration_Bytes><granterAddress_Bytes><granteeAddressLen (1 Byte)><granteeAddress_Bytes>
 
@@ -89,25 +117,68 @@ func parseGrantQueueKey(key []byte) (time.Time, sdk.AccAddress, sdk.AccAddress, 
 	return exp, granter, grantee, nil
 }
 
-// parseGranteeStoreKey key is of format:
+// ParseGranteeStoreKey key is of format:
 // 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-func parseGranteeStoreKey(key []byte) (sdk.AccAddress, sdk.AccAddress) {
+func ParseGranteeStoreKey(key []byte) (sdk.AccAddress, sdk.AccAddress) {
 	// key is of format:
 	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
 	kv.AssertKeyAtLeastLength(key, 2)
+	if !bytes.Equal(key[:1], GranteeKey) {
+		panic(fmt.Sprintf("invalid key prefix. expected 0x%s, actual 0x%s", hex.EncodeToString(key[:1]), GranteeKey))
+	}
+
 	key = key[1:] // remove a prefix key
-	granteeAddrLen := key[0]
-	kv.AssertKeyAtLeastLength(key, int(granteeAddrLen))
+
+	// decode grantee address
+	dataLen := int(key[0])
+	kv.AssertKeyAtLeastLength(key, dataLen)
 	key = key[1:]
-	granteeAddr := key[:granteeAddrLen]
+	granteeAddr := key[:dataLen]
+
+	// decode granter address
 	kv.AssertKeyAtLeastLength(key, 1)
-	key = key[granteeAddrLen:]
-	granterAddrLen := int(key[0])
+	key = key[dataLen:]
+	dataLen = int(key[0])
 	key = key[1:]
-	kv.AssertKeyLength(key, granterAddrLen)
+	kv.AssertKeyLength(key, dataLen)
 	granterAddr := key
 
 	return granteeAddr, granterAddr
+}
+
+// ParseGranteeMsgStoreKey key is of format:
+// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+func ParseGranteeMsgStoreKey(key []byte) (sdk.AccAddress, string, sdk.AccAddress) {
+	// key is of format:
+	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+	kv.AssertKeyAtLeastLength(key, 2)
+	if !bytes.Equal(key[:1], GranteeMsgKey) {
+		panic(fmt.Sprintf("invalid key prefix. expected 0x%s, actual 0x%s", hex.EncodeToString(key[:1]), GranteeMsgKey))
+	}
+
+	// decode grantee address
+	key = key[1:] // remove a prefix key
+	dataLen := int(key[0])
+	kv.AssertKeyAtLeastLength(key, dataLen)
+	key = key[1:]
+	granteeAddr := key[:dataLen]
+
+	// decode msgTypeUrl
+	kv.AssertKeyAtLeastLength(key, 1)
+	key = key[dataLen:]
+	dataLen = int(key[0])
+	kv.AssertKeyAtLeastLength(key, dataLen)
+	key = key[1:]
+	msgType := conv.UnsafeBytesToStr(key[:dataLen])
+	key = key[dataLen:]
+
+	// decode granter address
+	dataLen = int(key[0])
+	key = key[1:]
+	kv.AssertKeyLength(key, dataLen)
+	granterAddr := key
+
+	return granteeAddr, msgType, granterAddr
 }
 
 // GrantQueueKey - return grant queue store key. If a given grant doesn't have a defined
@@ -128,8 +199,50 @@ func GrantQueueTimePrefix(expiration time.Time) []byte {
 	return append(GrantQueuePrefix, sdk.FormatTimeBytes(expiration)...)
 }
 
-// firstAddressFromGrantStoreKey parses the first address only
-func firstAddressFromGrantStoreKey(key []byte) sdk.AccAddress {
+// FirstAddressFromGrantStoreKey parses the first address only
+func FirstAddressFromGrantStoreKey(key []byte) sdk.AccAddress {
 	addrLen := key[0]
 	return key[1 : 1+addrLen]
+}
+
+func IncGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddress, msgType string) error {
+	skey := GranteeStoreKey(grantee, granter)
+	mkey := GranteeMsgStoreKey(grantee, msgType, granter)
+
+	scount := sdkmath.NewInt(1)
+	mcount := sdkmath.NewInt(1)
+
+	if exists, _ := store.Has(skey); exists {
+		val, err := store.Get(skey)
+		if err != nil {
+			return err
+		}
+
+		bi := new(big.Int).SetBytes(val).Int64()
+
+		scount = scount.AddRaw(bi + 1)
+	}
+
+	if exists, _ := store.Has(mkey); exists {
+		val, err := store.Get(mkey)
+		if err != nil {
+			return err
+		}
+
+		bi := new(big.Int).SetBytes(val).Int64()
+
+		mcount = mcount.AddRaw(bi + 1)
+	}
+
+	err := store.Set(skey, scount.BigInt().Bytes())
+	if err != nil {
+		return err
+	}
+
+	err = store.Set(mkey, mcount.BigInt().Bytes())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
