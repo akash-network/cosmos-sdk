@@ -19,6 +19,10 @@ const DefaultPage = 1
 // allowed value, paginate will use `DefaultLimit`
 const DefaultLimit = 100
 
+var (
+	ErrInvalidPaginationKey = fmt.Errorf("pagination: invalid key")
+)
+
 // ParsePagination validates PageRequest and returns page number & limit.
 func ParsePagination(pageReq *PageRequest) (page, limit int, err error) {
 	offset := 0

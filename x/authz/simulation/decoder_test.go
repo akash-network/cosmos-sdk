@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/kv"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/x/authz"
-	"github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	"github.com/cosmos/cosmos-sdk/x/authz/keeper/keys"
 	authzmodule "github.com/cosmos/cosmos-sdk/x/authz/module"
 	"github.com/cosmos/cosmos-sdk/x/authz/simulation"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -31,7 +31,7 @@ func TestDecodeStore(t *testing.T) {
 	require.NoError(t, err)
 	kvPairs := kv.Pairs{
 		Pairs: []kv.Pair{
-			{Key: keeper.GrantKey, Value: grantBz},
+			{Key: keys.GrantKey, Value: grantBz},
 			{Key: []byte{0x99}, Value: []byte{0x99}},
 		},
 	}
