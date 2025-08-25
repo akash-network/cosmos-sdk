@@ -53,7 +53,7 @@ func MigrateStore(ctx context.Context, storeService corestoretypes.KVStoreServic
 		if grant.Expiration.Before(now) {
 			grantsStore.Delete(grantsIter.Key())
 		} else {
-			granter, grantee, msgType := keys.ParseGrantStoreKey(grantsIter.Key())
+			granter, grantee, msgType := ParseGrantKey(grantsIter.Key())
 			// before 0.46 expiration was not a pointer, so now it's safe to dereference
 			key := keys.GrantQueueKey(*grant.Expiration, granter, grantee)
 

@@ -233,6 +233,10 @@ func encodePaginationResponse(grantee *query.PageResponse, granter *query.PageRe
 		encLen += 1 + 1 + len(granter.NextKey)
 	}
 
+	if encLen == 4 {
+		return nil
+	}
+
 	buf := make([]byte, encLen)
 
 	data := buf[4:]
@@ -283,9 +287,11 @@ func (k Keeper) GranteeGrants(ctx context.Context, req *authz.QueryGranteeGrants
 	var granteePgResp *query.PageResponse
 	var granterPgResp *query.PageResponse
 
-	gStore := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), keys.GranteeStoreKey(grantee, nil))
+	keyPrefix := keys.GranteeStoreKey(grantee, nil)
+
+	gStore := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), keyPrefix)
 	granteePgResp, err = query.FilteredPaginate(gStore, granteePg, func(key []byte, value []byte, accumulate bool) (bool, error) {
-		grantee, granter := keys.ParseGranteeStoreKey(key)
+		grantee, granter := keys.ParseGranteeStoreKey(append(keyPrefix, key...))
 
 		store := prefix.NewStore(runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx)), keys.GrantKey)
 

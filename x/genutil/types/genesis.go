@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 
 	"github.com/cosmos/cosmos-sdk/version"
 )
@@ -82,7 +82,7 @@ func (ag *AppGenesis) ValidateAndComplete() error {
 
 // SaveAs is a utility method for saving AppGenesis as a JSON file.
 func (ag *AppGenesis) SaveAs(file string) error {
-	appGenesisBytes, err := cmtjson.MarshalIndent(ag, "", "  ")
+	appGenesisBytes, err := json.MarshalIndent(ag, "", "  ")
 	if err != nil {
 		return err
 	}

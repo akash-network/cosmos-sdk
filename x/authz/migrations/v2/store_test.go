@@ -107,7 +107,7 @@ func TestMigration(t *testing.T) {
 
 	for _, g := range grants {
 		grant := g.authorization()
-		require.NoError(t, store.Set(keys.GrantStoreKey(g.grantee, g.granter, g.msgType), cdc.MustMarshal(&grant)))
+		require.NoError(t, store.Set(v2.GrantStoreKey(g.grantee, g.granter, g.msgType), cdc.MustMarshal(&grant)))
 	}
 
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(1 * time.Hour))
