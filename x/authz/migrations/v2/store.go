@@ -5,13 +5,13 @@ import (
 
 	corestoretypes "cosmossdk.io/core/store"
 	"cosmossdk.io/store/prefix"
-	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/internal/conv"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
+	"github.com/cosmos/cosmos-sdk/x/authz/keeper/keys"
 )
 
 // MigrateStore performs in-place store migrations from v0.45 to v0.46. The
@@ -22,22 +22,25 @@ import (
 func MigrateStore(ctx context.Context, storeService corestoretypes.KVStoreService, cdc codec.BinaryCodec) error {
 	store := storeService.OpenKVStore(ctx)
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	err := addExpiredGrantsIndex(sdkCtx, runtime.KVStoreAdapter(store), cdc)
+
+	err := store.Delete(keys.GranteeKey)
 	if err != nil {
 		return err
 	}
 
-	return nil
-}
+	err = store.Delete(keys.GranteeMsgKey)
+	if err != nil {
+		return err
+	}
 
-func addExpiredGrantsIndex(ctx sdk.Context, store storetypes.KVStore, cdc codec.BinaryCodec) error {
-	grantsStore := prefix.NewStore(store, GrantPrefix)
-
+	grantsStore := prefix.NewStore(runtime.KVStoreAdapter(store), keys.GrantKey)
 	grantsIter := grantsStore.Iterator(nil, nil)
-	defer grantsIter.Close()
+	defer func() {
+		_ = grantsIter.Close()
+	}()
 
 	queueItems := make(map[string][]string)
-	now := ctx.BlockTime()
+	now := sdkCtx.BlockTime()
 	for ; grantsIter.Valid(); grantsIter.Next() {
 		var grant authz.Grant
 		bz := grantsIter.Value()
@@ -50,9 +53,9 @@ func addExpiredGrantsIndex(ctx sdk.Context, store storetypes.KVStore, cdc codec.
 		if grant.Expiration.Before(now) {
 			grantsStore.Delete(grantsIter.Key())
 		} else {
-			granter, grantee, msgType := ParseGrantKey(grantsIter.Key())
+			granter, grantee, msgType := keys.ParseGrantStoreKey(grantsIter.Key())
 			// before 0.46 expiration was not a pointer, so now it's safe to dereference
-			key := GrantQueueKey(*grant.Expiration, granter, grantee)
+			key := keys.GrantQueueKey(*grant.Expiration, granter, grantee)
 
 			queueItem, ok := queueItems[conv.UnsafeBytesToStr(key)]
 			if !ok {
@@ -60,6 +63,11 @@ func addExpiredGrantsIndex(ctx sdk.Context, store storetypes.KVStore, cdc codec.
 			} else {
 				queueItem = append(queueItem, msgType)
 				queueItems[string(key)] = queueItem
+			}
+
+			err := keys.IncGranteeGrants(store, grantee, granter, msgType)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -71,7 +79,10 @@ func addExpiredGrantsIndex(ctx sdk.Context, store storetypes.KVStore, cdc codec.
 		if err != nil {
 			return err
 		}
-		store.Set(conv.UnsafeStrToBytes(key), bz)
+		err = store.Set(conv.UnsafeStrToBytes(key), bz)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

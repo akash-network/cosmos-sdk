@@ -23,6 +23,10 @@ const DefaultLimit = 100
 // which equals the maximum value that can be stored in uint64
 var PaginationMaxLimit uint64 = math.MaxUint64
 
+var (
+	ErrInvalidPaginationKey = fmt.Errorf("pagination: invalid key")
+)
+
 // ParsePagination validate PageRequest and returns page number & limit.
 func ParsePagination(pageReq *PageRequest) (page, limit int, err error) {
 	offset := 0
