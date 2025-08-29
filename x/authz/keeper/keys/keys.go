@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	"time"
 
 	corestoretypes "cosmossdk.io/core/store"
@@ -24,10 +23,10 @@ import (
 // - 0x03<grantee_Bytes>: Grant by grantee
 // - 0x04<grantee msg type>: grant by grantee and msgTypeUrl
 var (
-	GrantKey         = []byte{0x01} // prefix for each key
-	GrantQueuePrefix = []byte{0x02}
-	GranteeKey       = []byte{0x03} // reverse prefix to get grants by grantee
-	GranteeMsgKey    = []byte{0x04} // reverse prefix to get grantee's grants by msgTypeUrl
+	GrantKey             = []byte{0x01} // prefix for each key
+	GrantQueuePrefix     = []byte{0x02}
+	GranteeGranterKey    = []byte{0x03} // reverse prefix to get grants by grantee
+	GranteeMsgTypeUrlKey = []byte{0x04} // reverse prefix to get grantee's grants by msgTypeUrl
 )
 
 var lenTime = len(sdk.FormatTimeBytes(time.Now()))
@@ -37,48 +36,84 @@ var lenTime = len(sdk.FormatTimeBytes(time.Now()))
 //
 // - 0x01<granterAddressLen (1 Byte)><granterAddress_Bytes><granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgType_Bytes>: Grant
 func GrantStoreKey(grantee, granter sdk.AccAddress, msgType string) []byte {
-	m := conv.UnsafeStrToBytes(msgType)
-	granter = address.MustLengthPrefix(granter)
-	grantee = address.MustLengthPrefix(grantee)
-	key := sdk.AppendLengthPrefixedBytes(GrantKey, granter, grantee, m)
+	buf := &bytes.Buffer{}
 
-	return key
-}
+	buf.Write(GrantKey)
+	if !granter.Empty() {
+		data := address.MustLengthPrefix(granter)
+		buf.Write(data)
 
-// GranteeStoreKey - return authorization store key
-// Items are stored with the following key: values
-//
-// - 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-func GranteeStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress) []byte {
-	grantee = address.MustLengthPrefix(grantee)
-	granter = address.MustLengthPrefix(granter)
+		if !grantee.Empty() {
+			data = address.MustLengthPrefix(grantee)
+			buf.Write(data)
 
-	key := sdk.AppendLengthPrefixedBytes(GranteeKey, grantee, granter)
+			if msgType != "" {
+				data = conv.UnsafeStrToBytes(msgType)
 
-	return key
-}
-
-// GranteeMsgStoreKey - return authorization store key
-// Items are stored with the following key: values
-//
-// - 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgTypeAddressLen (1 Byte)><msgType_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-func GranteeMsgStoreKey(grantee sdk.AccAddress, msgType string, granter sdk.AccAddress) []byte {
-	args := make([][]byte, 0, 4)
-
-	args = append(args, GranteeMsgKey)
-	args = append(args, address.MustLengthPrefix(grantee))
-
-	if msgType != "" {
-		args = append(args, conv.UnsafeStrToBytes(msgType))
-
-		if granter != nil {
-			args = append(args, address.MustLengthPrefix(granter))
+				buf.WriteByte(byte(len(data)))
+				buf.Write(data)
+			}
 		}
 	}
 
-	key := sdk.AppendLengthPrefixedBytes(args...)
+	return buf.Bytes()
+}
 
-	return key
+// GranteeGranterStoreKey - return authorization store key
+// Items are stored with the following key: values
+//
+// - 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes><msgTypeAddressLen (1 Byte)><msgType_Bytes>
+func GranteeGranterStoreKey(grantee sdk.AccAddress, granter sdk.AccAddress, msgType string) []byte {
+	buf := &bytes.Buffer{}
+
+	buf.Write(GranteeGranterKey)
+	if !grantee.Empty() {
+		data := address.MustLengthPrefix(grantee)
+		buf.Write(data)
+
+		if !granter.Empty() {
+			data = address.MustLengthPrefix(granter)
+			buf.Write(data)
+
+			if msgType != "" {
+				data = conv.UnsafeStrToBytes(msgType)
+
+				buf.WriteByte(byte(len(data)))
+				buf.Write(data)
+			}
+		}
+	}
+
+	return buf.Bytes()
+}
+
+// GranteeMsgTypeUrlStoreKey - return authorization store key
+// Items are stored with the following key: values
+//
+// - 0x04<granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgTypeAddressLen (1 Byte)><msgType_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+func GranteeMsgTypeUrlStoreKey(grantee sdk.AccAddress, msgType string, granter sdk.AccAddress) []byte {
+	buf := &bytes.Buffer{}
+
+	buf.Write(GranteeMsgTypeUrlKey)
+
+	if !grantee.Empty() {
+		data := address.MustLengthPrefix(grantee)
+		buf.Write(data)
+
+		if msgType != "" {
+			data = conv.UnsafeStrToBytes(msgType)
+
+			buf.WriteByte(byte(len(data)))
+			buf.Write(data)
+
+			if !granter.Empty() {
+				data = address.MustLengthPrefix(granter)
+				buf.Write(data)
+			}
+		}
+	}
+
+	return buf.Bytes()
 }
 
 // ParseGrantStoreKey - split granter, grantee address and msg type from the authorization key
@@ -117,62 +152,75 @@ func ParseGrantQueueKey(key []byte) (time.Time, sdk.AccAddress, sdk.AccAddress, 
 	return exp, granter, grantee, nil
 }
 
-// ParseGranteeStoreKey key is of format:
-// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-func ParseGranteeStoreKey(key []byte) (sdk.AccAddress, sdk.AccAddress) {
+// ParseGranteeGranterStoreKey key is of format:
+// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes><msgTypeAddressLen (1 Byte)><msgType_Bytes>
+func ParseGranteeGranterStoreKey(key []byte) (sdk.AccAddress, sdk.AccAddress, string) {
 	// key is of format:
 	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-	kv.AssertKeyAtLeastLength(key, 2)
-	if !bytes.Equal(key[:1], GranteeKey) {
-		panic(fmt.Sprintf("invalid key prefix. expected 0x%s, actual 0x%s", hex.EncodeToString(key[:1]), GranteeKey))
+	kv.AssertKeyAtLeastLength(key, len(GranteeGranterKey)+1)
+	if !bytes.HasPrefix(key, GranteeGranterKey) {
+		panic(fmt.Sprintf("invalid key prefix. expected 0x%s, actual 0x%s", hex.EncodeToString(key[:1]), GranteeGranterKey))
 	}
 
-	key = key[1:] // remove a prefix key
+	// remove a prefix key
+	key = key[len(GranteeGranterKey):]
 
 	// decode grantee address
+	kv.AssertKeyAtLeastLength(key, 1)
 	dataLen := int(key[0])
-	kv.AssertKeyAtLeastLength(key, dataLen)
 	key = key[1:]
+	kv.AssertKeyAtLeastLength(key, dataLen)
 	granteeAddr := key[:dataLen]
+	key = key[dataLen:]
 
 	// decode granter address
 	kv.AssertKeyAtLeastLength(key, 1)
-	key = key[dataLen:]
 	dataLen = int(key[0])
 	key = key[1:]
-	kv.AssertKeyLength(key, dataLen)
-	granterAddr := key
-
-	return granteeAddr, granterAddr
-}
-
-// ParseGranteeMsgStoreKey key is of format:
-// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-func ParseGranteeMsgStoreKey(key []byte) (sdk.AccAddress, string, sdk.AccAddress) {
-	// key is of format:
-	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
-	kv.AssertKeyAtLeastLength(key, 2)
-	if !bytes.Equal(key[:1], GranteeMsgKey) {
-		panic(fmt.Sprintf("invalid key prefix. expected 0x%s, actual 0x%s", hex.EncodeToString(key[:1]), GranteeMsgKey))
-	}
-
-	// decode grantee address
-	key = key[1:] // remove a prefix key
-	dataLen := int(key[0])
 	kv.AssertKeyAtLeastLength(key, dataLen)
-	key = key[1:]
-	granteeAddr := key[:dataLen]
+	granterAddr := key[:dataLen]
+	key = key[dataLen:]
 
 	// decode msgTypeUrl
 	kv.AssertKeyAtLeastLength(key, 1)
-	key = key[dataLen:]
 	dataLen = int(key[0])
-	kv.AssertKeyAtLeastLength(key, dataLen)
 	key = key[1:]
+	kv.AssertKeyLength(key, dataLen)
+	msgType := conv.UnsafeBytesToStr(key[:dataLen])
+
+	return granteeAddr, granterAddr, msgType
+}
+
+// ParseGranteeMsgTypeStoreKey key is of format:
+// 0x04<granteeAddressLen (1 Byte)><granteeAddress_Bytes><msgTypeAddressLen (1 Byte)><msgType_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+func ParseGranteeMsgTypeStoreKey(key []byte) (sdk.AccAddress, string, sdk.AccAddress) {
+	// key is of format:
+	// 0x03<granteeAddressLen (1 Byte)><granteeAddress_Bytes><granterAddressLen (1 Byte)><granterAddress_Bytes>
+	kv.AssertKeyAtLeastLength(key, len(GranteeMsgTypeUrlKey)+1)
+	if !bytes.HasPrefix(key, GranteeMsgTypeUrlKey) {
+		panic(fmt.Sprintf("invalid key prefix. expected 0x%s, actual 0x%s", hex.EncodeToString(key[:1]), GranteeMsgTypeUrlKey))
+	}
+
+	// remove a prefix key
+	key = key[len(GranteeMsgTypeUrlKey):]
+
+	// decode grantee address
+	dataLen := int(key[0])
+	key = key[1:]
+	kv.AssertKeyAtLeastLength(key, dataLen)
+	granteeAddr := key[:dataLen]
+	key = key[dataLen:]
+
+	// decode msgTypeUrl
+	kv.AssertKeyAtLeastLength(key, 1)
+	dataLen = int(key[0])
+	key = key[1:]
+	kv.AssertKeyAtLeastLength(key, dataLen)
 	msgType := conv.UnsafeBytesToStr(key[:dataLen])
 	key = key[dataLen:]
 
 	// decode granter address
+	kv.AssertKeyAtLeastLength(key, 1)
 	dataLen = int(key[0])
 	key = key[1:]
 	kv.AssertKeyLength(key, dataLen)
@@ -206,42 +254,41 @@ func FirstAddressFromGrantStoreKey(key []byte) sdk.AccAddress {
 }
 
 func IncGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddress, msgType string) error {
-	skey := GranteeStoreKey(grantee, granter)
-	mkey := GranteeMsgStoreKey(grantee, msgType, granter)
+	skey := GranteeGranterStoreKey(grantee, granter, msgType)
+	mkey := GranteeMsgTypeUrlStoreKey(grantee, msgType, granter)
 
 	scount := sdkmath.NewInt(1)
 	mcount := sdkmath.NewInt(1)
 
-	if exists, _ := store.Has(skey); exists {
-		val, err := store.Get(skey)
+	if exists, _ := store.Has(skey); !exists {
+		err := store.Set(skey, scount.BigInt().Bytes())
+		if err != nil {
+			return err
+		}
+		//val, err := store.Get(skey)
+		//if err != nil {
+		//	return err
+		//}
+		//
+		//bi := new(big.Int).SetBytes(val).Int64()
+		//
+		//scount = scount.AddRaw(bi + 1)
+	}
+
+	if exists, _ := store.Has(mkey); !exists {
+		err := store.Set(mkey, mcount.BigInt().Bytes())
 		if err != nil {
 			return err
 		}
 
-		bi := new(big.Int).SetBytes(val).Int64()
-
-		scount = scount.AddRaw(bi + 1)
-	}
-
-	if exists, _ := store.Has(mkey); exists {
-		val, err := store.Get(mkey)
-		if err != nil {
-			return err
-		}
-
-		bi := new(big.Int).SetBytes(val).Int64()
-
-		mcount = mcount.AddRaw(bi + 1)
-	}
-
-	err := store.Set(skey, scount.BigInt().Bytes())
-	if err != nil {
-		return err
-	}
-
-	err = store.Set(mkey, mcount.BigInt().Bytes())
-	if err != nil {
-		return err
+		//val, err := store.Get(mkey)
+		//if err != nil {
+		//	return err
+		//}
+		//
+		//bi := new(big.Int).SetBytes(val).Int64()
+		//
+		//mcount = mcount.AddRaw(bi + 1)
 	}
 
 	return nil

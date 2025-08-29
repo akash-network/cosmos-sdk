@@ -41,11 +41,12 @@ func TestGrantQueueKey(t *testing.T) {
 }
 
 func TestGranteeKey(t *testing.T) {
-	key := GranteeStoreKey(grantee, granter)
+	key := GranteeStoreKey(grantee, msgType, granter)
 
 	require.Len(t, key, len(GranteeKey)+len(address.MustLengthPrefix(grantee))+len(address.MustLengthPrefix(granter)))
 
-	grantee1, granter1 := ParseGranteeStoreKey(key)
+	grantee1, msgType1, granter1 := ParseGranteeStoreKey(key)
 	require.Equal(t, granter, granter1)
 	require.Equal(t, grantee, grantee1)
+	require.Equal(t, msgType1, msgType)
 }
