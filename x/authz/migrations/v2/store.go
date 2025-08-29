@@ -23,12 +23,12 @@ func MigrateStore(ctx context.Context, storeService corestoretypes.KVStoreServic
 	store := storeService.OpenKVStore(ctx)
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	err := store.Delete(keys.GranteeKey)
+	err := store.Delete(keys.GranteeGranterKey)
 	if err != nil {
 		return err
 	}
 
-	err = store.Delete(keys.GranteeMsgKey)
+	err = store.Delete(keys.GranteeMsgTypeUrlKey)
 	if err != nil {
 		return err
 	}
