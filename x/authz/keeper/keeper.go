@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/big"
 	"strconv"
 	"time"
 
@@ -14,7 +13,6 @@ import (
 	corestoretypes "cosmossdk.io/core/store"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/log"
-	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -329,13 +327,14 @@ func (k Keeper) GetGranteeGrantsByMsgType(ctx context.Context, grantee sdk.AccAd
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	store := runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx))
-	iter := storetypes.KVStorePrefixIterator(store, keys.GranteeMsgStoreKey(grantee, msgType, nil))
+	prefix := keys.GranteeMsgTypeUrlStoreKey(grantee, msgType, nil)
+	iter := storetypes.KVStorePrefixIterator(store, prefix)
 	defer func() {
 		_ = iter.Close()
 	}()
 
 	for ; iter.Valid(); iter.Next() {
-		_, _, granter := keys.ParseGranteeMsgStoreKey(iter.Key())
+		_, _, granter := keys.ParseGranteeMsgTypeStoreKey(iter.Key())
 
 		grant, found := k.getGrant(ctx, keys.GrantStoreKey(grantee, granter, msgType))
 		if !found || (grant.Expiration != nil && grant.Expiration.Before(sdkCtx.BlockHeader().Time)) {
@@ -500,43 +499,53 @@ func (k Keeper) DequeueAndDeleteExpiredGrants(ctx context.Context) error {
 }
 
 func decGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddress, msgType string) error {
-	skey := keys.GranteeStoreKey(grantee, granter)
-	mkey := keys.GranteeMsgStoreKey(grantee, msgType, granter)
+	skey := keys.GranteeGranterStoreKey(grantee, granter, msgType)
+	mkey := keys.GranteeMsgTypeUrlStoreKey(grantee, msgType, granter)
 
-	sval, err := store.Get(skey)
+	err := store.Delete(skey)
 	if err != nil {
 		return err
 	}
 
-	mval, err := store.Get(mkey)
+	err = store.Delete(mkey)
 	if err != nil {
 		return err
 	}
 
-	si := new(big.Int).SetBytes(sval).Int64()
-	mi := new(big.Int).SetBytes(mval).Int64()
-	si--
-	mi--
+	//sval, err := store.Get(skey)
+	//if err != nil {
+	//	return err
+	//}
 
-	if si == 0 {
-		err = store.Delete(skey)
-	} else {
-		count := sdkmath.NewInt(si)
-		err = store.Set(skey, count.BigInt().Bytes())
-	}
-	if err != nil {
-		return err
-	}
+	//mval, err := store.Get(mkey)
+	//if err != nil {
+	//	return err
+	//}
 
-	if mi == 0 {
-		err = store.Delete(mkey)
-	} else {
-		count := sdkmath.NewInt(mi)
-		err = store.Set(mkey, count.BigInt().Bytes())
-	}
-	if err != nil {
-		return err
-	}
+	//si := new(big.Int).SetBytes(sval).Int64()
+	////mi := new(big.Int).SetBytes(mval).Int64()
+	//si--
+	////mi--
+	//
+	//if si == 0 {
+	//	err = store.Delete(skey)
+	//} else {
+	//	count := sdkmath.NewInt(si)
+	//	err = store.Set(skey, count.BigInt().Bytes())
+	//}
+	//if err != nil {
+	//	return err
+	//}
+
+	//if mi == 0 {
+	//	err = store.Delete(mkey)
+	//} else {
+	//	count := sdkmath.NewInt(mi)
+	//	err = store.Set(mkey, count.BigInt().Bytes())
+	//}
+	//if err != nil {
+	//	return err
+	//}
 
 	return nil
 }
