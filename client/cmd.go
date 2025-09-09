@@ -1,13 +1,19 @@
 package client
 
 import (
+	"context"
 	"fmt"
+	"net"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
 	"github.com/tendermint/tendermint/libs/cli"
+	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
@@ -77,6 +83,67 @@ func ValidateCmd(cmd *cobra.Command, args []string) error {
 	return cmd.Help()
 }
 
+func makeHTTPDialer(ctx context.Context, remoteAddr string) (func(context.Context, string, string) (net.Conn, error), error) {
+	u, err := newParsedURL(remoteAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	protocol := u.Scheme
+
+	// accept http(s) as an alias for tcp
+	switch protocol {
+	case protoHTTP, protoHTTPS:
+		protocol = protoTCP
+	}
+
+	dialFn := func(_ context.Context, proto, addr string) (net.Conn, error) {
+		return (&net.Dialer{
+			Timeout:   10 * time.Second, // Connection timeout
+			KeepAlive: 30 * time.Second, // Keep-alive period
+		}).DialContext(ctx, protocol, u.GetDialAddress())
+	}
+
+	return dialFn, nil
+}
+
+// newHTTPClient is used to create an http client with some default parameters.
+// We overwrite the http.Client.Dial so we can do http over tcp or unix.
+// remoteAddr should be fully featured (eg. with tcp:// or unix://).
+// An error will be returned in case of invalid remoteAddr.
+func newHTTPClient(ctx context.Context, remoteAddr string) (*http.Client, error) {
+	dialFn, err := makeHTTPDialer(ctx, remoteAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			// Connection pooling settings
+			MaxIdleConns:          100,              // Maximum number of idle connections across all hosts
+			MaxIdleConnsPerHost:   10,               // Maximum number of idle connections per host
+			MaxConnsPerHost:       50,               // Maximum number of connections per host
+			IdleConnTimeout:       90 * time.Second, // How long idle connections are kept alive
+			TLSHandshakeTimeout:   10 * time.Second,
+			ResponseHeaderTimeout: 30 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+
+			// Enable connection reuse
+			DisableKeepAlives: false,
+
+			// Set to true to prevent GZIP-bomb DoS attacks
+			DisableCompression: true,
+			DialContext:        dialFn,
+
+			// Force HTTP/1.1 to ensure better connection pooling behavior
+			// Some RPC nodes may not handle HTTP/2 connection pooling optimally
+			ForceAttemptHTTP2: false,
+		},
+	}
+
+	return client, nil
+}
+
 // ReadPersistentCommandFlags returns a Context with fields set for "persistent"
 // or common flags that do not necessarily change with context.
 //
@@ -138,7 +205,12 @@ func ReadPersistentCommandFlags(clientCtx Context, flagSet *pflag.FlagSet) (Cont
 		if rpcURI != "" {
 			clientCtx = clientCtx.WithNodeURI(rpcURI)
 
-			client, err := NewClientFromNode(rpcURI)
+			httpClient, err := newHTTPClient(context.Background(), rpcURI)
+			if err != nil {
+				return clientCtx, err
+			}
+
+			client, err := rpchttp.NewWithClient(rpcURI, "/websocket", httpClient)
 			if err != nil {
 				return clientCtx, err
 			}
