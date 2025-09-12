@@ -20,7 +20,7 @@ require (
 	github.com/tidwall/btree v1.8.1
 	go.uber.org/mock v0.6.0
 	google.golang.org/grpc v1.75.0
-	google.golang.org/protobuf v1.36.8
+	google.golang.org/protobuf v1.36.9
 	gotest.tools/v3 v3.5.2
 )
 
