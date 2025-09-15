@@ -11,7 +11,7 @@ require (
 	cosmossdk.io/math v1.5.3
 	cosmossdk.io/simapp v0.0.0-20230620040119-e078f1a49e8b
 	cosmossdk.io/store v1.1.2
-	cosmossdk.io/x/tx v0.14.0
+	cosmossdk.io/x/tx v1.1.0
 	github.com/cometbft/cometbft v0.38.18
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
