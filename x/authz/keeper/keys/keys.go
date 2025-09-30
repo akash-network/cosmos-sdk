@@ -49,8 +49,6 @@ func GrantStoreKey(grantee, granter sdk.AccAddress, msgType string) []byte {
 
 			if msgType != "" {
 				data = conv.UnsafeStrToBytes(msgType)
-
-				buf.WriteByte(byte(len(data)))
 				buf.Write(data)
 			}
 		}
@@ -265,14 +263,6 @@ func IncGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddr
 		if err != nil {
 			return err
 		}
-		//val, err := store.Get(skey)
-		//if err != nil {
-		//	return err
-		//}
-		//
-		//bi := new(big.Int).SetBytes(val).Int64()
-		//
-		//scount = scount.AddRaw(bi + 1)
 	}
 
 	if exists, _ := store.Has(mkey); !exists {
@@ -280,15 +270,6 @@ func IncGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddr
 		if err != nil {
 			return err
 		}
-
-		//val, err := store.Get(mkey)
-		//if err != nil {
-		//	return err
-		//}
-		//
-		//bi := new(big.Int).SetBytes(val).Int64()
-		//
-		//mcount = mcount.AddRaw(bi + 1)
 	}
 
 	return nil
