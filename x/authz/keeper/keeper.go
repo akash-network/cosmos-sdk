@@ -30,6 +30,8 @@ import (
 // https://github.com/cosmos/cosmos-sdk/discussions/9072
 const gasCostPerIteration = uint64(20)
 
+type OnGrantFn func(context.Context, sdk.AccAddress, authz.Authorization, *time.Time) bool
+
 type Keeper struct {
 	storeService corestoretypes.KVStoreService
 	cdc          codec.Codec
@@ -323,7 +325,7 @@ func (k Keeper) GetAuthorization(ctx context.Context, grantee, granter sdk.AccAd
 	return auth, grant.Expiration
 }
 
-func (k Keeper) GetGranteeGrantsByMsgType(ctx context.Context, grantee sdk.AccAddress, msgType string, onGrant func(context.Context, sdk.AccAddress, authz.Authorization, *time.Time) bool) {
+func (k Keeper) GetGranteeGrantsByMsgType(ctx context.Context, grantee sdk.AccAddress, msgType string, onGrant OnGrantFn) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	store := runtime.KVStoreAdapter(k.storeService.OpenKVStore(ctx))
@@ -511,41 +513,6 @@ func decGranteeGrants(store corestoretypes.KVStore, grantee, granter sdk.AccAddr
 	if err != nil {
 		return err
 	}
-
-	//sval, err := store.Get(skey)
-	//if err != nil {
-	//	return err
-	//}
-
-	//mval, err := store.Get(mkey)
-	//if err != nil {
-	//	return err
-	//}
-
-	//si := new(big.Int).SetBytes(sval).Int64()
-	////mi := new(big.Int).SetBytes(mval).Int64()
-	//si--
-	////mi--
-	//
-	//if si == 0 {
-	//	err = store.Delete(skey)
-	//} else {
-	//	count := sdkmath.NewInt(si)
-	//	err = store.Set(skey, count.BigInt().Bytes())
-	//}
-	//if err != nil {
-	//	return err
-	//}
-
-	//if mi == 0 {
-	//	err = store.Delete(mkey)
-	//} else {
-	//	count := sdkmath.NewInt(mi)
-	//	err = store.Set(mkey, count.BigInt().Bytes())
-	//}
-	//if err != nil {
-	//	return err
-	//}
 
 	return nil
 }
