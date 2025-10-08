@@ -197,22 +197,23 @@ func (suite *TestSuite) TestGRPCQueryGranterGrants() {
 }
 
 func (suite *TestSuite) TestGRPCQueryGranteeGrants() {
-	require := suite.Require()
 	queryClient, addrs := suite.queryClient, suite.addrs
 
 	testCases := []struct {
-		msg      string
-		preRun   func()
-		expError bool
-		request  authz.QueryGranteeGrantsRequest
-		numItems int
+		msg         string
+		preRun      func()
+		expError    bool
+		request     authz.QueryGranteeGrantsRequest
+		numItems    int
+		pageNextKey bool
 	}{
 		{
 			"fail invalid granter addr",
 			func() {},
-			true,
+			false,
 			authz.QueryGranteeGrantsRequest{},
 			0,
+			false,
 		},
 		{
 			"valid case, single authorization",
@@ -224,6 +225,7 @@ func (suite *TestSuite) TestGRPCQueryGranteeGrants() {
 				Grantee: addrs[0].String(),
 			},
 			1,
+			false,
 		},
 		{
 			"valid case, no authorization found",
@@ -233,6 +235,7 @@ func (suite *TestSuite) TestGRPCQueryGranteeGrants() {
 				Grantee: addrs[2].String(),
 			},
 			0,
+			false,
 		},
 		{
 			"valid case, multiple authorization",
@@ -244,6 +247,22 @@ func (suite *TestSuite) TestGRPCQueryGranteeGrants() {
 				Grantee: addrs[0].String(),
 			},
 			2,
+			false,
+		},
+		{
+			"valid case, pagination key",
+			func() {
+				suite.createSendAuthorization(addrs[0], addrs[2])
+			},
+			false,
+			authz.QueryGranteeGrantsRequest{
+				Grantee: addrs[0].String(),
+				Pagination: &query.PageRequest{
+					Limit: 1,
+				},
+			},
+			1,
+			false,
 		},
 		{
 			"valid case, pagination",
@@ -256,6 +275,7 @@ func (suite *TestSuite) TestGRPCQueryGranteeGrants() {
 				},
 			},
 			1,
+			false,
 		},
 	}
 
@@ -264,13 +284,43 @@ func (suite *TestSuite) TestGRPCQueryGranteeGrants() {
 			tc.preRun()
 			result, err := queryClient.GranteeGrants(gocontext.Background(), &tc.request)
 			if tc.expError {
-				require.Error(err)
+				suite.Require().Error(err)
 			} else {
-				require.NoError(err)
-				require.Len(result.Grants, tc.numItems)
+				suite.Require().NoError(err)
+				suite.Require().Len(result.Grants, tc.numItems)
 			}
 		})
 	}
+}
+
+func (suite *TestSuite) TestGRPCQueryGranteeGrantsPageKey() {
+	queryClient, addrs := suite.queryClient, suite.addrs
+
+	suite.createSendAuthorization(addrs[0], addrs[1])
+	suite.createSendAuthorization(addrs[1], addrs[2])
+
+	req := &authz.QueryGranteeGrantsRequest{
+		//Grantee: addrs[0].String(),
+		Pagination: &query.PageRequest{
+			Limit: 1,
+		},
+	}
+
+	resp, err := queryClient.GranteeGrants(gocontext.Background(), req)
+	suite.Require().NoError(err)
+	suite.Require().Len(resp.Grants, 1)
+
+	suite.Require().NotNil(resp.Pagination)
+	suite.Require().NotNil(resp.Pagination.NextKey)
+
+	req.Pagination.Key = resp.Pagination.NextKey
+
+	resp, err = queryClient.GranteeGrants(gocontext.Background(), req)
+	suite.Require().NoError(err)
+	suite.Require().Len(resp.Grants, 1)
+	suite.Require().NotNil(resp.Pagination)
+	suite.Require().Nil(resp.Pagination.NextKey)
+
 }
 
 func (suite *TestSuite) createSendAuthorization(grantee, granter sdk.AccAddress) authz.Authorization {
