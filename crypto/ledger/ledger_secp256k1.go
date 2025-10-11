@@ -32,7 +32,7 @@ type (
 		// Returns a compressed pubkey and bech32 address (requires user confirmation)
 		GetAddressPubKeySECP256K1([]uint32, string) ([]byte, string, error)
 		// Signs a message (requires user confirmation)
-		SignSECP256K1([]uint32, []byte) ([]byte, error)
+		SignSECP256K1([]uint32, []byte, byte) ([]byte, error)
 	}
 
 	// PrivKeyLedgerSecp256k1 implements PrivKey, calling the ledger nano we
@@ -236,7 +236,7 @@ func sign(device SECP256K1, pkl PrivKeyLedgerSecp256k1, msg []byte) ([]byte, err
 		return nil, err
 	}
 
-	sig, err := device.SignSECP256K1(pkl.Path.DerivationPath(), msg)
+	sig, err := device.SignSECP256K1(pkl.Path.DerivationPath(), msg, 0)
 	if err != nil {
 		return nil, err
 	}
