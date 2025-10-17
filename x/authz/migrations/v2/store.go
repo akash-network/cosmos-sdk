@@ -33,6 +33,16 @@ func MigrateStore(ctx context.Context, storeService corestoretypes.KVStoreServic
 		return err
 	}
 
+	granteeStore := prefix.NewStore(runtime.KVStoreAdapter(store), keys.GranteeGranterKey)
+	granteeIter := granteeStore.Iterator(nil, nil)
+	defer func() {
+		_ = granteeIter.Close()
+	}()
+
+	for ; granteeIter.Valid(); granteeIter.Next() {
+		granteeStore.Delete(granteeIter.Key())
+	}
+
 	grantsStore := prefix.NewStore(runtime.KVStoreAdapter(store), keys.GrantKey)
 	grantsIter := grantsStore.Iterator(nil, nil)
 	defer func() {

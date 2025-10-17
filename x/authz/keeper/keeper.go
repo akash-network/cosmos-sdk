@@ -236,7 +236,7 @@ func (k Keeper) SaveGrant(ctx context.Context, grantee, granter sdk.AccAddress, 
 	}
 
 	return sdkCtx.EventManager().EmitTypedEvent(&authz.EventGrant{
-		MsgTypeUrl: authorization.MsgTypeURL(),
+		MsgTypeUrl: msgType,
 		Granter:    granter.String(),
 		Grantee:    grantee.String(),
 	})
@@ -490,7 +490,13 @@ func (k Keeper) DequeueAndDeleteExpiredGrants(ctx context.Context) error {
 		}
 
 		for _, typeURL := range queueItem.MsgTypeUrls {
-			err = store.Delete(keys.GrantStoreKey(grantee, granter, typeURL))
+			gkey := keys.GrantStoreKey(grantee, granter, typeURL)
+
+			err = store.Delete(gkey)
+			if err != nil {
+				return err
+			}
+			err = decGranteeGrants(store, grantee, granter, typeURL)
 			if err != nil {
 				return err
 			}
