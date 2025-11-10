@@ -194,6 +194,9 @@ replace (
 )
 
 retract (
+	// build error
+	v0.53.4-akash.9
+
 	// incorrect tag for patch version
 	v0.53.1
 
