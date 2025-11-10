@@ -12,6 +12,7 @@ import (
 	"runtime/pprof"
 	"strings"
 	"time"
+	"encoding/json"
 
 	"github.com/cometbft/cometbft/abci/server"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -396,7 +397,7 @@ func startCmtNode(
 		pvm.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(cmtApp),
-		getGenDocProvider(cfg),
+		GetGenDocProvider(cfg),
 		cmtcfg.DefaultDBProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),
 		servercmtlog.CometLoggerWrapper{Logger: svrCtx.Logger},
@@ -431,8 +432,8 @@ func getAndValidateConfig(svrCtx *Context) (serverconfig.Config, error) {
 	return config, nil
 }
 
-// returns a function which returns the genesis doc from the genesis file.
-func getGenDocProvider(cfg *cmtcfg.Config) func() (node.ChecksummedGenesisDoc, error) {
+// GetGenDocProvider returns a function which returns the genesis doc from the genesis file.
+func GetGenDocProvider(cfg *cmtcfg.Config) func() (node.ChecksummedGenesisDoc, error) {
 	return func() (node.ChecksummedGenesisDoc, error) {
 		appGenesis, err := genutiltypes.AppGenesisFromFile(cfg.GenesisFile())
 		if err != nil {
@@ -443,9 +444,13 @@ func getGenDocProvider(cfg *cmtcfg.Config) func() (node.ChecksummedGenesisDoc, e
 		if err != nil {
 			return node.ChecksummedGenesisDoc{}, err
 		}
+
+		cs := make([]byte, len(appGenesis.Sha256Checksum))
+		copy(cs, appGenesis.Sha256Checksum)
+
 		return node.ChecksummedGenesisDoc{
 			GenesisDoc:     genDoc,
-			Sha256Checksum: appGenesis.Sha256Checksum,
+			Sha256Checksum: cs,
 		}, nil
 	}
 }
