@@ -12,7 +12,6 @@ import (
 	"runtime/pprof"
 	"strings"
 	"time"
-	"encoding/json"
 
 	"github.com/cometbft/cometbft/abci/server"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
