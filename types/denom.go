@@ -6,12 +6,17 @@ import (
 	"cosmossdk.io/math"
 )
 
-// denomUnits contains a mapping of denomination mapped to their respective unit
-// multipliers (e.g. 1atom = 10^-6uatom).
-var denomUnits = map[string]math.LegacyDec{}
+var (
+	// denomUnits contains a mapping of denomination mapped to their respective unit
+	// multipliers (e.g. 1atom = 10^-6uatom).
+	denomUnits = map[string]math.LegacyDec{}
 
-// baseDenom is the denom of smallest unit registered
-var baseDenom string
+	//// baseDenom is the denom of smallest unit registered
+	//baseDenom string
+
+	// baseDenom is the denom of smallest unit registered
+	baseDenoms = map[string]string{}
+)
 
 // RegisterDenom registers a denomination with a corresponding unit. If the
 // denomination is already registered, an error will be returned.
@@ -26,9 +31,12 @@ func RegisterDenom(denom string, unit math.LegacyDec) error {
 
 	denomUnits[denom] = unit
 
-	if baseDenom == "" || unit.LT(denomUnits[baseDenom]) {
-		baseDenom = denom
+	coreDenom := denom[len(denom)-3:]
+	base, exists := baseDenoms[coreDenom]
+	if !exists || unit.LT(denomUnits[base]) {
+		baseDenoms[coreDenom] = denom
 	}
+
 	return nil
 }
 
@@ -47,23 +55,26 @@ func GetDenomUnit(denom string) (math.LegacyDec, bool) {
 	return unit, true
 }
 
-// SetBaseDenom allow overwritting the base denom
-// if the denom has registered before, otherwise return error
-func SetBaseDenom(denom string) error {
-	_, ok := denomUnits[denom]
-	if !ok {
-		return fmt.Errorf("denom %s not registered", denom)
-	}
-	baseDenom = denom
-	return nil
-}
+//// SetBaseDenom allow overwritting the base denom
+//// if the denom has registered before, otherwise return error
+//func SetBaseDenom(denom string) error {
+//	_, ok := denomUnits[denom]
+//	if !ok {
+//		return fmt.Errorf("denom %s not registered", denom)
+//	}
+//	baseDenom = denom
+//	return nil
+//}
 
 // GetBaseDenom returns the denom of smallest unit registered
-func GetBaseDenom() (string, error) {
-	if baseDenom == "" {
+func GetBaseDenom(denom string) (string, error) {
+	coreDenom := denom[len(denom)-3:]
+	base, exists := baseDenoms[coreDenom]
+	if !exists {
 		return "", fmt.Errorf("no denom is registered")
 	}
-	return baseDenom, nil
+
+	return base, nil
 }
 
 // ConvertCoin attempts to convert a coin to a given denomination. If the given
@@ -119,7 +130,7 @@ func ConvertDecCoin(coin DecCoin, denom string) (DecCoin, error) {
 // NormalizeCoin try to convert a coin to the smallest unit registered,
 // returns original one if failed.
 func NormalizeCoin(coin Coin) Coin {
-	base, err := GetBaseDenom()
+	base, err := GetBaseDenom(coin.Denom)
 	if err != nil {
 		return coin
 	}
@@ -133,7 +144,7 @@ func NormalizeCoin(coin Coin) Coin {
 // NormalizeDecCoin try to convert a decimal coin to the smallest unit registered,
 // returns original one if failed.
 func NormalizeDecCoin(coin DecCoin) DecCoin {
-	base, err := GetBaseDenom()
+	base, err := GetBaseDenom(coin.Denom)
 	if err != nil {
 		return coin
 	}
