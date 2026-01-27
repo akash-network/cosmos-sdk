@@ -192,6 +192,11 @@ func (k Keeper) CalculateDelegationRewards(ctx context.Context, val stakingtypes
 }
 
 func (k Keeper) withdrawDelegationRewards(ctx context.Context, val stakingtypes.ValidatorI, del stakingtypes.DelegationI) (sdk.Coins, error) {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	addrCodec := k.authKeeper.AddressCodec()
 	delAddr, err := addrCodec.StringToBytes(del.GetDelegatorAddr())
 	if err != nil {
@@ -296,7 +301,7 @@ func (k Keeper) withdrawDelegationRewards(ctx context.Context, val stakingtypes.
 	}
 
 	if finalRewards.IsZero() {
-		baseDenom, _ := sdk.GetBaseDenom(outstanding.GetDenomByIndex(0))
+		baseDenom, _ := sdk.GetBaseDenom(bondDenom)
 		if baseDenom == "" {
 			baseDenom = sdk.DefaultBondDenom
 		}
