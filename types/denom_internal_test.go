@@ -37,15 +37,12 @@ func (s *internalDenomTestSuite) TestRegisterDenom() {
 	s.Require().False(ok)
 	s.Require().Equal(math.LegacyZeroDec(), res)
 
-	err := SetBaseDenom(atom)
-	s.Require().NoError(err)
-
 	res, ok = GetDenomUnit(atom)
 	s.Require().True(ok)
 	s.Require().Equal(atomUnit, res)
 
 	// reset registration
-	baseDenom = ""
+	baseDenoms = map[string]string{}
 	denomUnits = map[string]math.LegacyDec{}
 }
 
@@ -62,7 +59,7 @@ func (s *internalDenomTestSuite) TestConvertCoins() {
 	natomUnit := math.LegacyNewDecWithPrec(1, 9) // 10^-9 (nano)
 	s.Require().NoError(RegisterDenom(natom, natomUnit))
 
-	res, err := GetBaseDenom()
+	res, err := GetBaseDenom(matom)
 	s.Require().NoError(err)
 	s.Require().Equal(res, natom)
 	s.Require().Equal(NormalizeCoin(NewCoin(uatom, math.NewInt(1))), NewCoin(natom, math.NewInt(1000)))
@@ -112,7 +109,7 @@ func (s *internalDenomTestSuite) TestConvertCoins() {
 	}
 
 	// reset registration
-	baseDenom = ""
+	baseDenoms = map[string]string{}
 	denomUnits = map[string]math.LegacyDec{}
 }
 
@@ -129,7 +126,7 @@ func (s *internalDenomTestSuite) TestConvertDecCoins() {
 	natomUnit := math.LegacyNewDecWithPrec(1, 9) // 10^-9 (nano)
 	s.Require().NoError(RegisterDenom(natom, natomUnit))
 
-	res, err := GetBaseDenom()
+	res, err := GetBaseDenom(matom)
 	s.Require().NoError(err)
 	s.Require().Equal(res, natom)
 	s.Require().Equal(NormalizeDecCoin(NewDecCoin(uatom, math.NewInt(1))), NewDecCoin(natom, math.NewInt(1000)))
@@ -180,7 +177,7 @@ func (s *internalDenomTestSuite) TestConvertDecCoins() {
 	}
 
 	// reset registration
-	baseDenom = ""
+	baseDenoms = map[string]string{}
 	denomUnits = map[string]math.LegacyDec{}
 }
 
@@ -197,15 +194,6 @@ func (s *internalDenomTestSuite) TestDecOperationOrder() {
 	s.Require().Equal(coin, NewCoin("unit2", math.NewInt(11)))
 
 	// reset registration
-	baseDenom = ""
-	denomUnits = map[string]math.LegacyDec{}
-}
-
-func (s *internalDenomTestSuite) TestSetBaseDenomError() {
-	err := SetBaseDenom(atom)
-	s.Require().Error(err)
-
-	// reset registration
-	baseDenom = ""
+	baseDenoms = map[string]string{}
 	denomUnits = map[string]math.LegacyDec{}
 }
