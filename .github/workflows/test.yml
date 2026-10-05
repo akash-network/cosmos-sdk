@@ -77,7 +77,7 @@ jobs:
             **/go.sum
             **/Makefile
             Makefile
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: "${{ github.sha }}-${{ matrix.part }}"
       - name: test & coverage report creation
@@ -179,107 +179,107 @@ jobs:
             go.sum
             **/go.mod
             **/go.sum
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         continue-on-error: true
         with:
           name: "${{ github.sha }}-00-coverage"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         continue-on-error: true
         with:
           name: "${{ github.sha }}-01-coverage"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         continue-on-error: true
         with:
           name: "${{ github.sha }}-02-coverage"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         continue-on-error: true
         with:
           name: "${{ github.sha }}-03-coverage"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         continue-on-error: true
         with:
           name: "${{ github.sha }}-integration-coverage"
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-e2e-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-clientv2-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-core-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-depinject-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-errors-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-math-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-schema-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-collections-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-cosmovisor-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-confix-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-store-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-blockstm-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-log-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-x-tx-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-tools-benchmark-coverage"
         continue-on-error: true
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: env.GIT_DIFF
         with:
           name: "${{ github.sha }}-poa-coverage"
