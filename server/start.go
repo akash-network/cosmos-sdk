@@ -16,6 +16,7 @@ import (
 	"github.com/cometbft/cometbft/abci/server"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/tmhash"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
@@ -112,6 +113,8 @@ const (
 	KeyTriggerTestnetUpgrade = "trigger-testnet-upgrade"
 )
 
+type GenCtx func(svrCtx *Context, block bool) (*errgroup.Group, context.Context)
+
 // StartCmdOptions defines options that can be customized in `StartCmdWithOptions`,
 type StartCmdOptions struct {
 	// DBOpener can be used to customize db opening, for example customize db options or support different db backends,
@@ -126,6 +129,8 @@ type StartCmdOptions struct {
 	AddFlags func(cmd *cobra.Command)
 	// StartCommandHanlder can be used to customize the start command handler
 	StartCommandHandler func(svrCtx *Context, clientCtx client.Context, appCreator types.AppCreator, inProcessConsensus bool, opts StartCmdOptions) error
+	// GetCtx get cancelable context and error group from upper layer if set
+	GetCtx GenCtx
 }
 
 // StartCmd runs the service passed in, either stand-alone or in-process with
@@ -236,7 +241,7 @@ func start(svrCtx *Context, clientCtx client.Context, appCreator types.AppCreato
 	if !withCmt {
 		return startStandAlone(svrCtx, svrCfg, clientCtx, app, metrics, opts)
 	}
-	return startInProcess(svrCtx, svrCfg, clientCtx, app, metrics, opts)
+	return StartInProcess(svrCtx, svrCfg, clientCtx, app, metrics, opts)
 }
 
 func startStandAlone(svrCtx *Context, svrCfg serverconfig.Config, clientCtx client.Context, app types.Application, metrics *telemetry.Metrics, opts StartCmdOptions) error {
@@ -251,7 +256,13 @@ func startStandAlone(svrCtx *Context, svrCfg serverconfig.Config, clientCtx clie
 
 	svr.SetLogger(servercmtlog.CometLoggerWrapper{Logger: svrCtx.Logger.With("module", "abci-server")})
 
-	g, ctx := getCtx(svrCtx, false)
+	gCtx := getCtx
+
+	if opts.GetCtx != nil {
+		gCtx = opts.GetCtx
+	}
+
+	g, ctx := gCtx(svrCtx, true)
 
 	// Add the tx service to the gRPC router. We only need to register this
 	// service if API or gRPC is enabled, and avoid doing so in the general
@@ -305,13 +316,19 @@ func startStandAlone(svrCtx *Context, svrCfg serverconfig.Config, clientCtx clie
 	return g.Wait()
 }
 
-func startInProcess(svrCtx *Context, svrCfg serverconfig.Config, clientCtx client.Context, app types.Application,
+func StartInProcess(svrCtx *Context, svrCfg serverconfig.Config, clientCtx client.Context, app types.Application,
 	metrics *telemetry.Metrics, opts StartCmdOptions,
 ) error {
 	cmtCfg := svrCtx.Config
 	gRPCOnly := svrCtx.Viper.GetBool(flagGRPCOnly)
 
-	g, ctx := getCtx(svrCtx, true)
+	gCtx := getCtx
+
+	if opts.GetCtx != nil {
+		gCtx = opts.GetCtx
+	}
+
+	g, ctx := gCtx(svrCtx, true)
 
 	if gRPCOnly {
 		// TODO: Generalize logic so that gRPC only is really in startStandAlone
@@ -379,7 +396,7 @@ func startCmtNode(
 		pvm.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
 		proxy.NewLocalClientCreator(cmtApp),
-		getGenDocProvider(cfg),
+		GetGenDocProvider(cfg),
 		cmtcfg.DefaultDBProvider,
 		node.DefaultMetricsProvider(cfg.Instrumentation),
 		servercmtlog.CometLoggerWrapper{Logger: svrCtx.Logger},
@@ -414,15 +431,26 @@ func getAndValidateConfig(svrCtx *Context) (serverconfig.Config, error) {
 	return config, nil
 }
 
-// returns a function which returns the genesis doc from the genesis file.
-func getGenDocProvider(cfg *cmtcfg.Config) func() (*cmttypes.GenesisDoc, error) {
-	return func() (*cmttypes.GenesisDoc, error) {
+// GetGenDocProvider returns a function which returns the genesis doc from the genesis file.
+func GetGenDocProvider(cfg *cmtcfg.Config) func() (node.ChecksummedGenesisDoc, error) {
+	return func() (node.ChecksummedGenesisDoc, error) {
 		appGenesis, err := genutiltypes.AppGenesisFromFile(cfg.GenesisFile())
 		if err != nil {
-			return nil, err
+			return node.ChecksummedGenesisDoc{}, err
 		}
 
-		return appGenesis.ToGenesisDoc()
+		genDoc, err := appGenesis.ToGenesisDoc()
+		if err != nil {
+			return node.ChecksummedGenesisDoc{}, err
+		}
+
+		cs := make([]byte, len(appGenesis.Sha256Checksum))
+		copy(cs, appGenesis.Sha256Checksum)
+
+		return node.ChecksummedGenesisDoc{
+			GenesisDoc:     genDoc,
+			Sha256Checksum: cs,
+		}, nil
 	}
 }
 
@@ -797,11 +825,26 @@ func testnetify(ctx *Context, testnetAppCreator types.AppCreator, db dbm.DB, tra
 	}
 	validatorAddress := userPubKey.Address()
 
+	jsonBlob, err := os.ReadFile(config.GenesisFile())
+	if err != nil {
+		return nil, fmt.Errorf("couldn't read GenesisDoc file: %w", err)
+	}
+
+	updatedChecksum := tmhash.Sum(jsonBlob)
+	genDoc, err := cmttypes.GenesisDocFromJSON(jsonBlob)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = stateDB.SetSync(node.GenesisDocHashKey, updatedChecksum); err != nil {
+		return nil, node.ErrSaveGenesisDocHash{Err: err}
+	}
+
 	stateStore := sm.NewStore(stateDB, sm.StoreOptions{
 		DiscardABCIResponses: config.Storage.DiscardABCIResponses,
 	})
 
-	state, genDoc, err := node.LoadStateFromDBOrGenesisDocProvider(stateDB, genDocProvider)
+	state, genDoc, err := node.LoadStateFromDBOrGenesisDocProvider(stateDB, genDocProvider, "")
 	if err != nil {
 		return nil, err
 	}
@@ -906,7 +949,7 @@ func testnetify(ctx *Context, testnetAppCreator types.AppCreator, db dbm.DB, tra
 		return nil, err
 	}
 
-	// Create ValidatorSet struct containing just our valdiator.
+	// Create ValidatorSet struct containing just our validator.
 	newVal := &cmttypes.Validator{
 		Address:     validatorAddress,
 		PubKey:      userPubKey,
@@ -942,7 +985,7 @@ func testnetify(ctx *Context, testnetAppCreator types.AppCreator, db dbm.DB, tra
 		return nil, err
 	}
 
-	// Modfiy Validators stateDB entry.
+	// Modify Validators stateDB entry.
 	err = stateDB.Set(fmt.Appendf(nil, "validatorsKey:%v", blockStore.Height()), buf)
 	if err != nil {
 		return nil, err

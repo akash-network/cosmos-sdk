@@ -1,4 +1,4 @@
-package keeper
+package keys
 
 import (
 	"testing"
@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/cosmos-sdk/internal/conv"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -18,12 +19,12 @@ var (
 	msgType = bank.SendAuthorization{}.MsgTypeURL()
 )
 
-func TestGrantkey(t *testing.T) {
+func TestGrantKey(t *testing.T) {
 	require := require.New(t)
-	key := grantStoreKey(grantee, granter, msgType)
+	key := GrantStoreKey(grantee, granter, msgType)
 	require.Len(key, len(GrantKey)+len(address.MustLengthPrefix(grantee))+len(address.MustLengthPrefix(granter))+len([]byte(msgType)))
 
-	granter1, grantee1, msgType1 := parseGrantStoreKey(grantStoreKey(grantee, granter, msgType))
+	granter1, grantee1, msgType1 := ParseGrantStoreKey(GrantStoreKey(grantee, granter, msgType))
 	require.Equal(granter, granter1)
 	require.Equal(grantee, grantee1)
 	require.Equal(msgType1, msgType)
@@ -33,9 +34,20 @@ func TestGrantQueueKey(t *testing.T) {
 	blockTime := time.Now().UTC()
 	queueKey := GrantQueueKey(blockTime, granter, grantee)
 
-	expiration, granter1, grantee1, err := parseGrantQueueKey(queueKey)
+	expiration, granter1, grantee1, err := ParseGrantQueueKey(queueKey)
 	require.NoError(t, err)
 	require.Equal(t, blockTime, expiration)
 	require.Equal(t, granter, granter1)
 	require.Equal(t, grantee, grantee1)
+}
+
+func TestGranteeKey(t *testing.T) {
+	key := GranteeMsgTypeUrlStoreKey(grantee, msgType, granter)
+
+	require.Len(t, key, len(GranteeMsgTypeUrlKey)+len(address.MustLengthPrefix(grantee))+1+len(conv.UnsafeStrToBytes(msgType))+len(address.MustLengthPrefix(granter)))
+
+	grantee1, msgType1, granter1 := ParseGranteeMsgTypeStoreKey(key)
+	require.Equal(t, granter, granter1)
+	require.Equal(t, grantee, grantee1)
+	require.Equal(t, msgType1, msgType)
 }

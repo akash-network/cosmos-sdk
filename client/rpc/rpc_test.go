@@ -34,7 +34,6 @@ func (s *IntegrationTestSuite) SetupSuite() {
 
 	s.network, err = network.New(s.T(), s.T().TempDir(), cfg)
 	s.Require().NoError(err)
-
 	s.Require().NoError(s.network.WaitForNextBlock())
 }
 

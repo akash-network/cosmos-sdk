@@ -981,6 +981,7 @@ func Test100PercentCommissionReward(t *testing.T) {
 
 	accountKeeper.EXPECT().GetModuleAddress("distribution").Return(distrAcc.GetAddress())
 	stakingKeeper.EXPECT().ValidatorAddressCodec().Return(address.NewBech32Codec(sdk.Bech32PrefixValAddr)).AnyTimes()
+	stakingKeeper.EXPECT().BondDenom(gomock.Any()).Return(sdk.DefaultBondDenom, nil).AnyTimes()
 	accountKeeper.EXPECT().AddressCodec().Return(address.NewBech32Codec(sdk.Bech32MainPrefix)).AnyTimes()
 	bankKeeper.EXPECT().BlockedAddr(gomock.Any()).Return(false).AnyTimes()
 

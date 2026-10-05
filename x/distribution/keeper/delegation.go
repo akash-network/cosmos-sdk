@@ -403,7 +403,10 @@ func (k Keeper) withdrawDelegationRewards(ctx context.Context, val stakingtypes.
 	}
 
 	if finalRewards.IsZero() {
-		baseDenom, _ := sdk.GetBaseDenom()
+		baseDenom, err := k.stakingKeeper.BondDenom(ctx)
+		if err != nil {
+			return nil, err
+		}
 		if baseDenom == "" {
 			baseDenom = sdk.DefaultBondDenom
 		}
